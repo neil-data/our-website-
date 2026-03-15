@@ -147,6 +147,24 @@ export default function ContactPage() {
           </div>
         </div>
       </section>
+      <section className="py-12 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionTitle number="02" title="Find Us On Campus" />
+          <div className="mt-8 rounded-2xl overflow-hidden h-96 border border-white/10 relative">
+            <iframe
+              src="https://maps.google.com/maps?q=Institute%20of%20Advanced%20Research,%20Gandhinagar&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="absolute inset-0 grayscale contrast-125 opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+            ></iframe>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
+

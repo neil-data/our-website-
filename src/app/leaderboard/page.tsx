@@ -13,13 +13,22 @@ const podiumOrder = [1, 0, 2]; // Silver, Gold, Bronze visual order for podium
 
 export default function LeaderboardPage() {
   const [search, setSearch] = useState('');
-  const top3 = mockLeaderboard.slice(0, 3);
-  const rest = mockLeaderboard.slice(3).filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const [activeTab, setActiveTab] = useState('All');
+
+  // Filter based on tab and search
+  const filteredLeaderboard = mockLeaderboard.filter(e => {
+    const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
+    const matchesTab = activeTab === 'All' || e.team === activeTab;
+    return matchesSearch && matchesTab;
+  });
+
+  const top3 = filteredLeaderboard.slice(0, 3);
+  const rest = filteredLeaderboard.slice(3);
 
   const COLORS = ['#FBBC05', '#9aa0a6', '#EA4335'];
-  const PODIUM_HEIGHTS = ['h-20', 'h-32', 'h-16'];
+  const PODIUM_HEIGHTS = ['h-32', 'h-24', 'h-16'];
+
+  const teams = ['All', 'Leaders', 'Tech', 'Marketing', 'Design', 'Operations', 'Docs', 'Outreach', 'Student'];
 
   return (
     <div className="pt-20">
@@ -49,16 +58,35 @@ export default function LeaderboardPage() {
               </div>
             ))}
           </div>
+
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2 mt-8">
+            {teams.map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={`px-4 py-2 rounded-full text-xs font-mono uppercase tracking-widest transition-all ${
+                  activeTab === t
+                    ? 'bg-g-blue text-white shadow-[0_0_15px_rgba(66,133,244,0.3)]'
+                    : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* Podium */}
-      <section className="py-16 border-b border-white/5">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="flex items-end justify-center gap-4">
-            {podiumOrder.map((index) => {
-              const entry = top3[index];
-              const isGold = index === 0;
+      {top3.length > 0 && (
+        <section className="py-16 border-b border-white/5">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="flex items-end justify-center gap-4">
+              {podiumOrder.map((index) => {
+                const entry = top3[index];
+                if (!entry) return null;
+                const isGold = index === 0;
               return (
                 <motion.div
                   key={entry.userId}
@@ -100,20 +128,21 @@ export default function LeaderboardPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Table */}
       <section className="py-12">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="section-number">Rankings #4–20</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h2 className="section-number">All Rankings</h2>
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
               <input
                 type="text"
-                placeholder="Search members..."
+                placeholder="Search team members..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="form-input pl-9 py-2 text-xs max-w-[220px]"
+                className="form-input pl-9 py-2 text-xs w-full sm:w-[220px]"
               />
             </div>
           </div>
@@ -131,7 +160,7 @@ export default function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {rest.map((entry, i) => (
+                {filteredLeaderboard.map((entry, i) => (
                   <motion.tr
                     key={entry.userId}
                     initial={{ opacity: 0, x: -10 }}

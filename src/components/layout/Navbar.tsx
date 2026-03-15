@@ -16,7 +16,6 @@ const NAV_LINKS = [
   { href: '/media', label: 'Media' },
   { href: '/team', label: 'Team' },
   { href: '/contact', label: 'Contact' },
-  { href: '/chat', label: 'Chat' },
 ];
 
 export default function Navbar() {

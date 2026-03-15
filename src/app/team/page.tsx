@@ -8,9 +8,10 @@ import { mockTeam } from '@/data/team';
 import { AdminRole } from '@/types';
 import { Github, Linkedin, Twitter, Instagram } from 'lucide-react';
 
-type TeamCategory = AdminRole;
+type TeamCategory = AdminRole | 'all';
 
 const CATEGORIES: { key: TeamCategory; label: string; color: string }[] = [
+  { key: 'all', label: 'All Members', color: 'gray-300' },
   { key: 'leader', label: 'Leadership', color: 'g-red' },
   { key: 'tech', label: 'Tech Team', color: 'g-blue' },
   { key: 'marketing', label: 'Marketing', color: 'g-yellow' },
@@ -20,6 +21,7 @@ const CATEGORIES: { key: TeamCategory; label: string; color: string }[] = [
 ];
 
 const COLOR_MAP: Record<string, string> = {
+  'gray-300': 'border-gray-500/30 text-gray-300',
   'g-red': 'border-g-red/30 text-g-red',
   'g-blue': 'border-g-blue/30 text-g-blue',
   'g-yellow': 'border-g-yellow/30 text-g-yellow',
@@ -29,10 +31,12 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export default function TeamPage() {
-  const [active, setActive] = useState<TeamCategory>('leader');
+  const [active, setActive] = useState<TeamCategory>('all');
 
   const activeCategory = CATEGORIES.find(c => c.key === active)!;
-  const members = mockTeam.filter(m => m.team === active);
+  const members = active === 'all' 
+    ? mockTeam 
+    : mockTeam.filter(m => m.team === active);
 
   return (
     <div className="pt-20">

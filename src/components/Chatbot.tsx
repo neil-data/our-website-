@@ -94,16 +94,12 @@ export default function Chatbot() {
       {/* Chat Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all"
+        className="fixed bottom-6 right-6 z-40 bg-white/10 border border-white/20 backdrop-blur-md text-white rounded-full p-4 shadow-lg hover:bg-white/20 transition-all"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         aria-label="Open chat"
       >
-        {isOpen ? (
-          <X size={24} />
-        ) : (
-          <MessageCircle size={24} />
-        )}
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
       </motion.button>
 
       {/* Chat Window */}
@@ -114,10 +110,10 @@ export default function Chatbot() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200"
+            className="fixed bottom-24 right-6 z-40 w-96 max-w-[calc(100vw-2rem)] bg-[#0A0A0A]/90 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10"
           >
             {/* Header with Logo */}
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center gap-3">
+            <div className="border-b border-white/10 bg-white/5 p-4 flex items-center gap-3">
               <Image
                 src="/logo.png"
                 alt="GDGOC IAR"
@@ -126,14 +122,14 @@ export default function Chatbot() {
                 className="rounded"
               />
               <div>
-                <h3 className="font-bold text-lg">GDGOC IAR</h3>
-                <p className="text-sm text-blue-100">Always here to help</p>
+                <h3 className="font-bold text-lg text-white">GDGOC IAR</h3>
+                <p className="text-sm text-white/50">Always here to help</p>
               </div>
             </div>
 
             {/* Messages Container */}
-            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              {messages.map(message => (
+            <div className="h-96 overflow-y-auto p-4 space-y-4 bg-transparent">
+              {messages.map((message) => (
                 <motion.div
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -143,13 +139,13 @@ export default function Chatbot() {
                   }`}
                 >
                   <div
-                    className={`max-w-xs px-4 py-2 rounded-lg ${
+                    className={`max-w-[80%] px-4 py-2 rounded-xl ${
                       message.role === 'user'
-                        ? 'bg-blue-500 text-white rounded-br-none'
-                        : 'bg-white text-gray-800 rounded-bl-none border border-gray-200'
+                        ? 'bg-blue-600/80 text-white rounded-br-sm'
+                        : 'bg-white/10 text-gray-200 rounded-bl-sm border border-white/5'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm leading-relaxed">{message.content}</p>
                   </div>
                 </motion.div>
               ))}
@@ -159,11 +155,11 @@ export default function Chatbot() {
                   animate={{ opacity: 1 }}
                   className="flex justify-start"
                 >
-                  <div className="bg-white text-gray-800 px-4 py-2 rounded-lg rounded-bl-none border border-gray-200">
-                    <div className="flex gap-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                  <div className="bg-white/10 text-gray-200 px-4 py-3 rounded-xl rounded-bl-sm border border-white/5">
+                    <div className="flex gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-100" />
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce delay-200" />
                     </div>
                   </div>
                 </motion.div>
@@ -174,25 +170,25 @@ export default function Chatbot() {
             {/* Input Form */}
             <form
               onSubmit={handleSendMessage}
-              className="border-t border-gray-200 p-4 bg-white flex gap-2"
+              className="border-t border-white/10 p-4 bg-black/50 flex gap-2"
             >
               <input
                 type="text"
                 value={input}
-                onChange={e => setInput(e.target.value)}
+                onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask me anything..."
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 text-black"
+                className="flex-1 bg-white/5 px-4 py-2 border border-white/10 rounded-lg focus:outline-none focus:border-blue-500/50 focus:bg-white/10 disabled:opacity-50 text-white placeholder-gray-500 transition-colors"
               />
               <motion.button
                 type="submit"
                 disabled={isLoading || !input.trim()}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="bg-blue-600/80 text-white p-2.5 rounded-lg hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 aria-label="Send message"
               >
-                <Send size={20} />
+                <Send size={18} />
               </motion.button>
             </form>
           </motion.div>

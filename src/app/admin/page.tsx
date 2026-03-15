@@ -4,17 +4,30 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
+
+type Tab = 'student' | 'admin';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>('student');
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('leader');
+
+  const isAdmin = tab === 'admin';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/dashboard/student/overview');
+    if (isAdmin) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('adminRole', role);
+      }
+      router.push('/dashboard/admin/overview');
+    } else {
+      router.push('/dashboard/student/overview');
+    }
   };
 
   return (
@@ -49,8 +62,31 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="glass-card rounded-2xl p-8 glow-border-blue">
+          {/* Tab Toggle */}
+          <div className="flex gap-2 mb-8 p-1 glass-card rounded-xl">
+            <button
+              onClick={() => setTab('student')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono uppercase tracking-widest transition-all ${
+                tab === 'student' ? 'bg-g-blue/20 text-white border border-g-blue/30' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              <GraduationCap size={14} />
+              Student
+            </button>
+            <button
+              onClick={() => setTab('admin')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono uppercase tracking-widest transition-all ${
+                tab === 'admin' ? 'bg-g-red/20 text-white border border-g-red/30' : 'text-white/40 hover:text-white'
+              }`}
+            >
+              <ShieldCheck size={14} />
+              Admin
+            </button>
+          </div>
+
           <AnimatePresence mode="wait">
             <motion.form
+              key={tab}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -61,17 +97,40 @@ export default function LoginPage() {
               {/* Email */}
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">
-                  Student Email
+                  {isAdmin ? 'Admin Email' : 'Student Email'}
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder={'student@iar.ac.in'}
+                  placeholder={isAdmin ? 'admin@iar.ac.in' : 'student@iar.ac.in'}
                   className="form-input"
                   autoComplete="email"
                 />
               </div>
+
+              {/* Admin Role Select */}
+              {isAdmin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Admin Role</label>
+                  <select
+                    value={role}
+                    onChange={e => setRole(e.target.value)}
+                    className="form-input"
+                  >
+                    <option value="leader" className="bg-dark-card">Leader (Full Access)</option>
+                    <option value="tech" className="bg-dark-card">Tech</option>
+                    <option value="marketing" className="bg-dark-card">Marketing</option>
+                    <option value="documentation" className="bg-dark-card">Documentation</option>
+                    <option value="operations" className="bg-dark-card">Operations</option>
+                    <option value="outreach" className="bg-dark-card">Outreach</option>
+                  </select>
+                </motion.div>
+              )}
 
               {/* Password */}
               <div>
@@ -96,17 +155,21 @@ export default function LoginPage() {
               </div>
 
               {/* Forgot password */}
-              <div className="flex justify-end">
-                <a href="#" className="text-xs font-mono text-white/35 hover:text-g-blue transition-colors">Forgot password?</a>
-              </div>
+              {!isAdmin && (
+                <div className="flex justify-end">
+                  <a href="#" className="text-xs font-mono text-white/35 hover:text-g-blue transition-colors">Forgot password?</a>
+                </div>
+              )}
 
               {/* Submit */}
               <button
                 type="submit"
-                className={`btn-skew w-full text-center block text-white text-xs font-mono uppercase tracking-widest py-3.5 transition-all bg-g-blue border border-g-blue hover:bg-g-blue/80`}
+                className={`btn-skew w-full text-center block text-white text-xs font-mono uppercase tracking-widest py-3.5 transition-all ${
+                  isAdmin ? 'bg-g-red border border-g-red hover:bg-g-red/80' : 'bg-g-blue border border-g-blue hover:bg-g-blue/80'
+                }`}
               >
                 <span className="flex items-center justify-center gap-2">
-                  Sign In to Dashboard
+                  {isAdmin ? 'Access Admin Dashboard' : 'Sign In to Dashboard'}
                   <ArrowRight size={13} />
                 </span>
               </button>
@@ -132,10 +195,12 @@ export default function LoginPage() {
                 Continue with Google
               </button>
 
-              <p className="text-center text-xs text-white/30">
-                Don&apos;t have an account?{' '}
-                <Link href="/login" className="text-g-blue hover:text-white transition-colors">Join the community</Link>
-              </p>
+              {!isAdmin && (
+                <p className="text-center text-xs text-white/30">
+                  Don&apos;t have an account?{' '}
+                  <Link href="/login" className="text-g-blue hover:text-white transition-colors">Join the community</Link>
+                </p>
+              )}
             </motion.form>
           </AnimatePresence>
         </div>
