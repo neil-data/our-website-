@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
 
 type Tab = 'student' | 'admin';
+const isIarEmail = (value: string) => /^[^\s@]+@iar\.ac\.in$/i.test(value.trim());
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('leader');
+  const [error, setError] = useState('');
 
   const isAdmin = tab === 'admin';
 
@@ -24,16 +26,37 @@ export default function LoginPage() {
     if (adminSession) router.replace('/dashboard/admin/overview');
   }, [router]);
 
+  const signIn = () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (isAdmin) {
+      const displayName = cleanEmail.split('@')[0];
+      localStorage.setItem('adminRole', role);
+      localStorage.setItem('gdgoc-admin-session', JSON.stringify({ name: displayName, email: cleanEmail, role }));
+      router.push('/dashboard/admin/overview');
+      return;
+    }
+    const displayName = cleanEmail.split('@')[0];
+    localStorage.setItem('gdgoc-student-session', JSON.stringify({ name: displayName, email: cleanEmail }));
+    router.push('/dashboard/student/overview');
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isAdmin) {
-      const displayName = email.split('@')[0];
-      localStorage.setItem('adminRole', role);
-      localStorage.setItem('gdgoc-admin-session', JSON.stringify({ name: displayName, email, role }));
-      router.push('/dashboard/admin/overview');
-    } else {
-      router.push('/dashboard/student/overview');
+    if (!isIarEmail(email)) {
+      setError('Please use your @iar.ac.in email.');
+      return;
     }
+    setError('');
+    signIn();
+  };
+
+  const handleGoogleSignIn = () => {
+    if (!isIarEmail(email)) {
+      setError('Use your @iar.ac.in email, then tap Google sign in.');
+      return;
+    }
+    setError('');
+    signIn();
   };
 
   return (
@@ -108,12 +131,19 @@ export default function LoginPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
                   placeholder={isAdmin ? 'admin@iar.ac.in' : 'student@iar.ac.in'}
                   className="form-input"
                   autoComplete="email"
+                  required
+                  pattern="^[^\\s@]+@iar\\.ac\\.in$"
                 />
               </div>
+
+              {error && <p className="text-xs text-g-red font-mono">{error}</p>}
 
               {/* Admin Role Select */}
               {isAdmin && (
@@ -190,6 +220,7 @@ export default function LoginPage() {
               {/* Google Sign-in */}
               <button
                 type="button"
+                onClick={handleGoogleSignIn}
                 className="w-full flex items-center justify-center gap-3 py-3 rounded border border-white/10 hover:border-white/25 hover:bg-white/3 transition-all text-sm text-white/70"
               >
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none">

@@ -6,18 +6,40 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 
+const isIarEmail = (value: string) => /^[^\s@]+@iar\.ac\.in$/i.test(value.trim());
+
 export default function LoginPage() {
   const router = useRouter();
   const [showPass, setShowPass] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const signInStudent = () => {
+    const cleanEmail = email.trim().toLowerCase();
+    const displayName = name.trim() || cleanEmail.split('@')[0];
+    localStorage.setItem('gdgoc-student-session', JSON.stringify({ name: displayName, email: cleanEmail }));
+    router.push('/dashboard/student/overview');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const displayName = name.trim() || email.split('@')[0];
-    localStorage.setItem('gdgoc-student-session', JSON.stringify({ name: displayName, email }));
-    router.push('/dashboard/student/overview');
+    if (!isIarEmail(email)) {
+      setError('Please use your @iar.ac.in email.');
+      return;
+    }
+    setError('');
+    signInStudent();
+  };
+
+  const handleGoogleSignIn = () => {
+    if (!isIarEmail(email)) {
+      setError('Use your @iar.ac.in email, then tap Google sign in.');
+      return;
+    }
+    setError('');
+    signInStudent();
   };
 
   return (
@@ -84,12 +106,21 @@ export default function LoginPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                  }}
                   placeholder={'student@iar.ac.in'}
                   className="form-input"
                   autoComplete="email"
+                  required
+                  pattern="^[^\\s@]+@iar\\.ac\\.in$"
                 />
               </div>
+
+              {error && (
+                <p className="text-xs text-g-red font-mono">{error}</p>
+              )}
 
               {/* Password */}
               <div>
@@ -139,6 +170,7 @@ export default function LoginPage() {
               {/* Google Sign-in */}
               <button
                 type="button"
+                onClick={handleGoogleSignIn}
                 className="w-full flex items-center justify-center gap-3 py-3 rounded border border-white/10 hover:border-white/25 hover:bg-white/3 transition-all text-sm text-white/70"
               >
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
