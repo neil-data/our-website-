@@ -4,10 +4,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { Eye, EyeOff, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
+import { getFirebaseAuth } from '@/lib/firebaseClient';
 
 type Tab = 'student' | 'admin';
-const isIarEmail = (value: string) => /^[^\s@]+@iar\.ac\.in$/i.test(value.trim());
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+const isIarEmail = (value: string) => {
+  const clean = normalizeEmail(value);
+  return clean.endsWith('@iar.ac.in') && clean.indexOf('@') === clean.lastIndexOf('@') && clean.indexOf('@') > 0;
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +23,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('leader');
   const [error, setError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const isAdmin = tab === 'admin';
 
@@ -26,8 +33,8 @@ export default function LoginPage() {
     if (adminSession) router.replace('/dashboard/admin/overview');
   }, [router]);
 
-  const signIn = () => {
-    const cleanEmail = email.trim().toLowerCase();
+  const signIn = (signInEmail: string) => {
+    const cleanEmail = normalizeEmail(signInEmail);
     if (isAdmin) {
       const displayName = cleanEmail.split('@')[0];
       localStorage.setItem('adminRole', role);
@@ -47,16 +54,37 @@ export default function LoginPage() {
       return;
     }
     setError('');
-    signIn();
+    signIn(email);
   };
 
-  const handleGoogleSignIn = () => {
-    if (!isIarEmail(email)) {
-      setError('Use your @iar.ac.in email, then tap Google sign in.');
-      return;
-    }
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
     setError('');
-    signIn();
+
+    try {
+      const auth = getFirebaseAuth();
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+        prompt: 'select_account',
+        hd: 'iar.ac.in',
+      });
+
+      const result = await signInWithPopup(auth, provider);
+      const googleEmail = normalizeEmail(result.user.email || '');
+
+      if (!isIarEmail(googleEmail)) {
+        await signOut(auth);
+        setError('Google sign-in is only allowed for @iar.ac.in accounts.');
+        return;
+      }
+
+      setEmail(googleEmail);
+      signIn(googleEmail);
+    } catch {
+      setError('Google sign-in failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -139,7 +167,6 @@ export default function LoginPage() {
                   className="form-input"
                   autoComplete="email"
                   required
-                  pattern="^[^\\s@]+@iar\\.ac\\.in$"
                 />
               </div>
 
@@ -221,6 +248,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
+                disabled={googleLoading}
                 className="w-full flex items-center justify-center gap-3 py-3 rounded border border-white/10 hover:border-white/25 hover:bg-white/3 transition-all text-sm text-white/70"
               >
                 <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
@@ -229,7 +257,7 @@ export default function LoginPage() {
                   <path d="M10.2 28.036A14.478 14.478 0 019.456 24c0-1.41.242-2.78.744-4.036v-6.364H2.012A23.989 23.989 0 000 24c0 3.87.927 7.526 2.012 10.4l8.188-6.364z" fill="#FBBC05"/>
                   <path d="M24 9.576c3.623 0 6.868 1.246 9.422 3.692l7.073-7.073C36.19 2.381 30.628 0 24 0 14.452 0 6.06 4.883 2.012 13.6l8.188 6.364C12.146 13.913 17.582 9.576 24 9.576z" fill="#EA4335"/>
                 </svg>
-                Continue with Google
+                {googleLoading ? 'Signing in...' : 'Continue with Google'}
               </button>
 
               {!isAdmin && (
