@@ -1,32 +1,33 @@
 import { TeamMember } from '@/types';
 
 export const mockTeam: TeamMember[] = [
-  // Leaders
-  { id: 't1', name: 'Aryan Kapoor', role: 'Chapter Lead', team: 'leader', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=AryanK', bio: 'Visionary leader driving GDGOC IAR\'s mission to empower student developers across India.', socials: { linkedin: '#', github: '#', twitter: '#' } },
-  { id: 't2', name: 'Sanya Mehta', role: 'Co-Lead', team: 'leader', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=SanyaM', bio: 'Co-leads the chapter with a focus on community growth and Google programs adoption.', socials: { linkedin: '#', github: '#' } },
-  { id: 't3', name: 'Rohan Das', role: 'Faculty Advisor', team: 'leader', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=RohanD', bio: 'Professor in CS Department, mentoring the chapter\'s technical and academic ambitions.', socials: { linkedin: '#' } },
+  // Chapter Leaders
+  { id: 't1', name: 'Jeet Chauhan', role: 'Chapter Lead', team: 'leader', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=JeetChauhan', bio: 'Leads chapter strategy, direction, and annual impact goals for GDGoC IAR.', socials: { linkedin: '#' } },
+  { id: 't2', name: 'Anuj Bhadouria', role: 'Chapter Lead', team: 'leader', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=AnujBhadouria', bio: 'Drives execution across all teams and ensures high-quality chapter operations.', socials: { linkedin: '#' } },
 
   // Tech Team
-  { id: 't4', name: 'Kavya Reddy', role: 'Tech Lead', team: 'tech', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=KavyaR', bio: 'Full-stack developer specializing in React, Next.js, and Google Cloud Platform.', socials: { linkedin: '#', github: '#' } },
-  { id: 't5', name: 'Aditya Singh', role: 'Web Developer', team: 'tech', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=AdityaS', bio: 'Passionate about building developer tools and OSS contributions.', socials: { github: '#' } },
-  { id: 't6', name: 'Pooja Nair', role: 'ML Engineer', team: 'tech', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=PoojaN', bio: 'AI/ML enthusiast working with TensorFlow and Vertex AI for community projects.', socials: { github: '#', linkedin: '#' } },
-  { id: 't7', name: 'Yash Kumar', role: 'Android Developer', team: 'tech', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=YashK', bio: 'Flutter & Kotlin developer. GDE aspirant passionate about mobile experiences.', socials: { github: '#' } },
-
-  // Marketing Team
-  { id: 't8', name: 'Ishita Sharma', role: 'Marketing Lead', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=IshitaS', bio: 'Creative strategist managing GDGOC IAR\'s brand presence and digital campaigns.', socials: { instagram: '#', linkedin: '#' } },
-  { id: 't9', name: 'Dev Malhotra', role: 'Content Creator', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=DevM', bio: 'Creates engaging content and drives social media strategy for the community.', socials: { instagram: '#', twitter: '#' } },
-  { id: 't10', name: 'Riya Bose', role: 'Graphic Designer', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=RiyaB', bio: 'UI/UX designer crafting visual identities and event branding for the chapter.', socials: { instagram: '#', linkedin: '#' } },
+  { id: 't3', name: 'Manthan Balani', role: 'Team Lead', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=ManthanBalani', bio: 'Leads technical projects, mentorship, and engineering standards for the chapter.', socials: { github: '#', linkedin: '#' } },
+  { id: 't4', name: 'Chidatma Patel', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=ChidatmaPatel', bio: 'Builds and supports chapter products with a focus on clean implementation.', socials: { github: '#' } },
+  { id: 't5', name: 'Devashya Jethva', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=DevashyaJethva', bio: 'Contributes to development, feature rollout, and technical collaboration.', socials: { github: '#' } },
+  { id: 't6', name: 'Neil Banerjee', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=Neil', bio: 'Works on web experience, iteration speed, and deployment quality.', socials: { github: '#', linkedin: '#' } },
 
   // Documentation Team
-  { id: 't11', name: 'Nikhil Joshi', role: 'Docs Lead', team: 'documentation', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=NikhilJ', bio: 'Technical writer and knowledge manager ensuring everything is documented clearly.', socials: { github: '#', linkedin: '#' } },
-  { id: 't12', name: 'Tanvi Gupta', role: 'Docs Member', team: 'documentation', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=TanviG', bio: 'Maintains community wiki, event reports, and learning resources.', socials: { linkedin: '#' } },
+  { id: 't7', name: 'Naitri Mori', role: 'Team Lead', team: 'documentation', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=NaitriMori', bio: 'Leads documentation planning and keeps chapter knowledge accessible.', socials: { linkedin: '#' } },
+  { id: 't8', name: 'Alifiya Pisawadi', role: 'Team Member', team: 'documentation', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=AlifiyaPisawadi', bio: 'Maintains event records, reports, and structured internal notes.', socials: { linkedin: '#' } },
+  { id: 't9', name: 'Ruhan Chanchalani', role: 'Team Member', team: 'documentation', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=RuhanChanchalani', bio: 'Supports technical writing and process documentation for the chapter.', socials: { linkedin: '#' } },
 
-  // Operations Team
-  { id: 't13', name: 'Sahil Verma', role: 'Operations Lead', team: 'operations', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=SahilV', bio: 'Manages event logistics, vendor coordination, and resource planning.', socials: { linkedin: '#' } },
-  { id: 't14', name: 'Ankita Rao', role: 'Event Coordinator', team: 'operations', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=AnkitaR', bio: 'Ensures every event runs smoothly from planning to execution.', socials: { linkedin: '#' } },
-  { id: 't15', name: 'Manav Shah', role: 'Participant Manager', team: 'operations', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=ManavS', bio: 'Handles registrations, check-ins, and participant experience management.', socials: { linkedin: '#' } },
+  // Marketing Team
+  { id: 't10', name: 'Dhruvil Mamtora', role: 'Team Lead', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=DhruvilMamtora', bio: 'Leads marketing strategy, growth campaigns, and community visibility.', socials: { instagram: '#', linkedin: '#' } },
+  { id: 't11', name: 'Chauhan Rajvardhansingh Narendrasingh', role: 'Team Member', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=ChauhanRajvardhansinghNarendrasingh', bio: 'Contributes to campaign planning and promotional execution.', socials: { instagram: '#' } },
+  { id: 't12', name: 'Radhe M Thakkar', role: 'Team Member', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=RadheMThakkar', bio: 'Supports social media storytelling and campaign asset coordination.', socials: { instagram: '#' } },
+  { id: 't13', name: 'Janvi Verma', role: 'Team Member', team: 'marketing', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=JanviVerma', bio: 'Focuses on content planning and consistent brand communication.', socials: { instagram: '#', linkedin: '#' } },
 
   // Outreach Team
-  { id: 't16', name: 'Prachi Kulkarni', role: 'Outreach Lead', team: 'outreach', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=PrachiK', bio: 'Builds partnerships with tech companies, NGOs, and other GDG chapters.', socials: { linkedin: '#', twitter: '#' } },
-  { id: 't17', name: 'Karan Oberoi', role: 'Partnership Manager', team: 'outreach', avatar: 'https://api.dicebear.com/7.x/avataaars/png?seed=KaranO', bio: 'Manages collaboration pipelines and campus ambassador networks.', socials: { linkedin: '#' } },
+  { id: 't14', name: 'Shailey Maheshwari', role: 'Team Lead', team: 'outreach', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=ShaileyMaheshwari', bio: 'Leads outreach efforts and builds collaboration opportunities.', socials: { linkedin: '#' } },
+  { id: 't15', name: 'Diya Dave', role: 'Team Member', team: 'outreach', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=DiyaDave', bio: 'Coordinates partner communication and external chapter relations.', socials: { linkedin: '#' } },
+
+  // Operations Team
+  { id: 't16', name: 'Trusha Kansara', role: 'Team Lead', team: 'operations', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=TrushaKansara', bio: 'Leads planning and smooth execution of chapter events and workflows.', socials: { linkedin: '#' } },
+  { id: 't17', name: 'Vachna Shah', role: 'Team Member', team: 'operations', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=VachnaShah', bio: 'Supports on-ground operations and logistics management.', socials: { linkedin: '#' } },
+  { id: 't18', name: 'Shrusti Chauhan', role: 'Team Member', team: 'operations', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=ShrustiChauhan', bio: 'Handles coordination tasks to ensure event-day reliability.', socials: { linkedin: '#' } },
 ];
