@@ -4,10 +4,14 @@ import Image from 'next/image';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
 import { Star, Award, Calendar, Code2 } from 'lucide-react';
+import { upsertUserFromSession } from '@/lib/adminData';
 
 interface StudentSession {
   name: string;
   email: string;
+  iarNo?: string;
+  department?: string;
+  year?: string;
   bio?: string;
   phone?: string;
   github?: string;
@@ -20,6 +24,9 @@ export default function StudentProfilePage() {
 
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
+  const [formIarNo, setFormIarNo] = useState('');
+  const [formDepartment, setFormDepartment] = useState('');
+  const [formYear, setFormYear] = useState('');
   const [formBio, setFormBio] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formGithub, setFormGithub] = useState('');
@@ -32,6 +39,9 @@ export default function StudentProfilePage() {
       setSession(s);
       setFormName(s.name || '');
       setFormEmail(s.email || '');
+      setFormIarNo(s.iarNo || '');
+      setFormDepartment(s.department || '');
+      setFormYear(s.year || '');
       setFormBio(s.bio || '');
       setFormPhone(s.phone || '');
       setFormGithub(s.github || '');
@@ -44,12 +54,16 @@ export default function StudentProfilePage() {
     const updated: StudentSession = {
       name: formName,
       email: formEmail,
+      iarNo: formIarNo,
+      department: formDepartment,
+      year: formYear,
       bio: formBio,
       phone: formPhone,
       github: formGithub,
       linkedin: formLinkedin,
     };
     localStorage.setItem('gdgoc-student-session', JSON.stringify(updated));
+    upsertUserFromSession(updated);
     setSession(updated);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -120,6 +134,26 @@ export default function StudentProfilePage() {
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Email</label>
                   <input value={formEmail} onChange={e => setFormEmail(e.target.value)} className="form-input" type="email" />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">IAR No</label>
+                  <input value={formIarNo} onChange={e => setFormIarNo(e.target.value)} className="form-input" placeholder="IAR number" />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Department</label>
+                  <input value={formDepartment} onChange={e => setFormDepartment(e.target.value)} className="form-input" placeholder="e.g., CSE" />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Year</label>
+                  <select value={formYear} onChange={e => setFormYear(e.target.value)} className="form-input">
+                    <option value="" className="bg-dark-card">Select</option>
+                    <option value="1st" className="bg-dark-card">1st Year</option>
+                    <option value="2nd" className="bg-dark-card">2nd Year</option>
+                    <option value="3rd" className="bg-dark-card">3rd Year</option>
+                    <option value="4th" className="bg-dark-card">4th Year</option>
+                  </select>
                 </div>
               </div>
               <div>

@@ -1,10 +1,11 @@
 'use client';
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { use } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { mockEvents } from '@/data/events';
+import { getEventsWithRegistrationCounts } from '@/lib/adminData';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -51,7 +52,11 @@ const scheduleColors: Record<string, string> = {
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const event = mockEvents.find(e => e.id === id);
+  const [events, setEvents] = useState(getEventsWithRegistrationCounts());
+  const event = events.find(e => e.id === id);
+  useEffect(() => {
+    setEvents(getEventsWithRegistrationCounts());
+  }, []);
   if (!event) notFound();
 
   const registrationPercent = Math.round((event.registered / event.capacity) * 100);
@@ -207,8 +212,11 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       
       {/* Registration Modal */}
       <RegistrationModal
+        eventId={event.id}
+        event={event}
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
+        onRegistered={() => setEvents(getEventsWithRegistrationCounts())}
         eventTitle={event.title}
         eventDate={formatDate(event.date)}
       />

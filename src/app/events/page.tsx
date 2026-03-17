@@ -1,11 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/Badge';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { mockEvents } from '@/data/events';
+import { getEventsWithRegistrationCounts } from '@/lib/adminData';
 import { getCategoryColor, getStatusColor, formatDateShort } from '@/lib/utils';
 import { Calendar, MapPin, Users, Search, Filter } from 'lucide-react';
 import { Event } from '@/types';
@@ -14,11 +14,16 @@ const CATEGORIES = ['all', 'hackathon', 'workshop', 'talk', 'bootcamp', 'communi
 const STATUSES = ['all', 'upcoming', 'live', 'registration-open', 'completed'];
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<Event[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [status, setStatus] = useState('all');
 
-  const filtered = mockEvents.filter((e: Event) => {
+  useEffect(() => {
+    setEvents(getEventsWithRegistrationCounts());
+  }, []);
+
+  const filtered = events.filter((e: Event) => {
     const matchSearch = e.title.toLowerCase().includes(search.toLowerCase()) || e.shortDesc.toLowerCase().includes(search.toLowerCase());
     const matchCategory = category === 'all' || e.category === category;
     const matchStatus = status === 'all' || e.status === status;

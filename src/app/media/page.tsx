@@ -1,11 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SectionTitle } from '@/components/ui/SectionTitle';
-import { Badge } from '@/components/ui/Badge';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { mockMedia } from '@/data/media';
+import { loadMediaItems } from '@/lib/localStore';
+import { MediaItem } from '@/types';
 import { X, Play, Camera } from 'lucide-react';
 
 const CATEGORIES = ['all', 'hackathon', 'workshop', 'community', 'highlights', 'team'];
@@ -13,8 +11,13 @@ const CATEGORIES = ['all', 'hackathon', 'workshop', 'community', 'highlights', '
 export default function MediaPage() {
   const [category, setCategory] = useState('all');
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [items, setItems] = useState<MediaItem[]>([]);
 
-  const filtered = mockMedia.filter(m => category === 'all' || m.category === category);
+  useEffect(() => {
+    setItems(loadMediaItems());
+  }, []);
+
+  const filtered = items.filter(m => category === 'all' || m.category === category);
 
   return (
     <div className="pt-20">
@@ -65,10 +68,20 @@ export default function MediaPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.04 }}
-                className="media-grid-item relative group cursor-pointer"
-                onClick={() => setLightbox(item.src)}
+                className="media-grid-item relative group"
               >
-                <div className="relative rounded-xl overflow-hidden bg-dark-card border border-white/5">
+                <a
+                  href={item.link || item.src}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block rounded-xl overflow-hidden bg-dark-card border border-white/5"
+                  onClick={e => {
+                    if (!item.link) {
+                      e.preventDefault();
+                      setLightbox(item.src);
+                    }
+                  }}
+                >
                   <Image
                     src={item.thumbnail}
                     alt={item.title}
@@ -94,7 +107,7 @@ export default function MediaPage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </a>
               </motion.div>
             ))}
           </div>

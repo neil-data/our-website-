@@ -4,33 +4,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleAuthProvider, getRedirectResult, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
-import { Eye, EyeOff, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
+import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { getFirebaseAuth } from '@/lib/firebaseClient';
 
-type Tab = 'student' | 'admin';
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const isIarEmail = (value: string) => {
   const clean = normalizeEmail(value);
   return clean.endsWith('@iar.ac.in') && clean.indexOf('@') === clean.lastIndexOf('@') && clean.indexOf('@') > 0;
 };
 
-const getAuthErrorMessage = (error: unknown) => {
-  const code = typeof error === 'object' && error !== null && 'code' in error
-    ? String((error as { code?: string }).code)
-    : '';
-
-  if (code.includes('auth/popup-blocked')) return 'Popup was blocked by browser. Continuing with redirect sign-in...';
-  if (code.includes('auth/popup-closed-by-user')) return 'Google sign-in was closed before completion.';
-  if (code.includes('auth/unauthorized-domain')) return 'This domain is not authorized in Firebase Auth settings.';
-  if (code.includes('auth/operation-not-allowed')) return 'Google provider is not enabled in Firebase Auth.';
-  if (code.includes('auth/invalid-api-key')) return 'Firebase API key is invalid.';
-  return 'Google sign-in failed. Please try again.';
-};
-
 export default function LoginPage() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('student');
   const [showPass, setShowPass] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,51 +23,17 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const isAdmin = tab === 'admin';
-
-  // If already logged in, skip the login page
   useEffect(() => {
     const adminSession = localStorage.getItem('gdgoc-admin-session');
     if (adminSession) router.replace('/dashboard/admin/overview');
   }, [router]);
 
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        const auth = getFirebaseAuth();
-        const result = await getRedirectResult(auth);
-        const redirectEmail = normalizeEmail(result?.user?.email || '');
-
-        if (!redirectEmail) return;
-
-        if (!isIarEmail(redirectEmail)) {
-          await signOut(auth);
-          setError('Google sign-in is only allowed for @iar.ac.in accounts.');
-          return;
-        }
-
-        setEmail(redirectEmail);
-        signIn(redirectEmail);
-      } catch (error) {
-        setError(getAuthErrorMessage(error));
-      }
-    };
-
-    void handleRedirectResult();
-  }, [role, tab]);
-
   const signIn = (signInEmail: string) => {
     const cleanEmail = normalizeEmail(signInEmail);
-    if (isAdmin) {
-      const displayName = cleanEmail.split('@')[0];
-      localStorage.setItem('adminRole', role);
-      localStorage.setItem('gdgoc-admin-session', JSON.stringify({ name: displayName, email: cleanEmail, role }));
-      router.push('/dashboard/admin/overview');
-      return;
-    }
     const displayName = cleanEmail.split('@')[0];
-    localStorage.setItem('gdgoc-student-session', JSON.stringify({ name: displayName, email: cleanEmail }));
-    router.push('/dashboard/student/overview');
+    localStorage.setItem('adminRole', role);
+    localStorage.setItem('gdgoc-admin-session', JSON.stringify({ name: displayName, email: cleanEmail, role }));
+    router.push('/dashboard/admin/overview');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -118,22 +69,8 @@ export default function LoginPage() {
 
       setEmail(googleEmail);
       signIn(googleEmail);
-    } catch (error) {
-      const message = getAuthErrorMessage(error);
-
-      if (message.includes('Continuing with redirect')) {
-        try {
-          const auth = getFirebaseAuth();
-          const provider = new GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: 'select_account', hd: 'iar.ac.in' });
-          await signInWithRedirect(auth, provider);
-          return;
-        } catch (redirectError) {
-          setError(getAuthErrorMessage(redirectError));
-        }
-      } else {
-        setError(message);
-      }
+    } catch {
+      setError('Google sign-in failed. Please try again.');
     } finally {
       setGoogleLoading(false);
     }
@@ -141,16 +78,13 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-dark-bg">
-      {/* Background */}
       <div className="absolute inset-0 dot-grid opacity-20" />
-      <div className="absolute inset-0 bg-gradient-radial from-g-blue/5 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-radial from-g-red/5 via-transparent to-transparent" />
 
-      {/* Glow orbs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-g-blue/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-g-green/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-g-red/5 rounded-full blur-3xl" />
 
       <div className="relative z-10 w-full max-w-md mx-auto px-4">
-        {/* Logo */}
         <div className="text-center mb-10">
           <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
             <Image
@@ -162,40 +96,17 @@ export default function LoginPage() {
               priority
             />
             <span className="font-heading font-bold text-white text-sm tracking-wide">
-              GDGOC × <span className="text-g-blue">IAR</span>
+              GDGOC × <span className="text-g-red">ADMIN</span>
             </span>
           </Link>
-          <h1 className="font-heading text-2xl font-bold text-white mt-2">Welcome Back</h1>
-          <p className="text-white/40 text-sm mt-1">Sign in to your community account</p>
+          <h1 className="font-heading text-2xl font-bold text-white mt-2">Admin Access</h1>
+          <p className="text-white/40 text-sm mt-1">Sign in to manage the platform</p>
         </div>
 
-        {/* Card */}
-        <div className="glass-card rounded-2xl p-8 glow-border-blue">
-          {/* Tab Toggle */}
-          <div className="flex gap-2 mb-8 p-1 glass-card rounded-xl">
-            <button
-              onClick={() => setTab('student')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono uppercase tracking-widest transition-all ${
-                tab === 'student' ? 'bg-g-blue/20 text-white border border-g-blue/30' : 'text-white/40 hover:text-white'
-              }`}
-            >
-              <GraduationCap size={14} />
-              Student
-            </button>
-            <button
-              onClick={() => setTab('admin')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono uppercase tracking-widest transition-all ${
-                tab === 'admin' ? 'bg-g-red/20 text-white border border-g-red/30' : 'text-white/40 hover:text-white'
-              }`}
-            >
-              <ShieldCheck size={14} />
-              Admin
-            </button>
-          </div>
-
+        <div className="glass-card rounded-2xl p-8 glow-border-red">
           <AnimatePresence mode="wait">
             <motion.form
-              key={tab}
+              key="admin"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -203,11 +114,8 @@ export default function LoginPage() {
               onSubmit={handleSubmit}
               className="space-y-4"
             >
-              {/* Email */}
               <div>
-                <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">
-                  {isAdmin ? 'Admin Email' : 'Student Email'}
-                </label>
+                <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Admin Email</label>
                 <input
                   type="email"
                   value={email}
@@ -215,7 +123,7 @@ export default function LoginPage() {
                     setEmail(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder={isAdmin ? 'admin@iar.ac.in' : 'student@iar.ac.in'}
+                  placeholder="admin@iar.ac.in"
                   className="form-input"
                   autoComplete="email"
                   required
@@ -224,30 +132,22 @@ export default function LoginPage() {
 
               {error && <p className="text-xs text-g-red font-mono">{error}</p>}
 
-              {/* Admin Role Select */}
-              {isAdmin && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Admin Role</label>
+                <select
+                  value={role}
+                  onChange={e => setRole(e.target.value)}
+                  className="form-input"
                 >
-                  <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Admin Role</label>
-                  <select
-                    value={role}
-                    onChange={e => setRole(e.target.value)}
-                    className="form-input"
-                  >
-                    <option value="leader" className="bg-dark-card">Leader (Full Access)</option>
-                    <option value="tech" className="bg-dark-card">Tech</option>
-                    <option value="marketing" className="bg-dark-card">Marketing</option>
-                    <option value="documentation" className="bg-dark-card">Documentation</option>
-                    <option value="operations" className="bg-dark-card">Operations</option>
-                    <option value="outreach" className="bg-dark-card">Outreach</option>
-                  </select>
-                </motion.div>
-              )}
+                  <option value="leader" className="bg-dark-card">Leader (Full Access)</option>
+                  <option value="tech" className="bg-dark-card">Tech</option>
+                  <option value="marketing" className="bg-dark-card">Marketing</option>
+                  <option value="documentation" className="bg-dark-card">Documentation</option>
+                  <option value="operations" className="bg-dark-card">Operations</option>
+                  <option value="outreach" className="bg-dark-card">Outreach</option>
+                </select>
+              </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Password</label>
                 <div className="relative">
@@ -269,34 +169,22 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Forgot password */}
-              {!isAdmin && (
-                <div className="flex justify-end">
-                  <a href="#" className="text-xs font-mono text-white/35 hover:text-g-blue transition-colors">Forgot password?</a>
-                </div>
-              )}
-
-              {/* Submit */}
               <button
                 type="submit"
-                className={`btn-skew w-full text-center block text-white text-xs font-mono uppercase tracking-widest py-3.5 transition-all ${
-                  isAdmin ? 'bg-g-red border border-g-red hover:bg-g-red/80' : 'bg-g-blue border border-g-blue hover:bg-g-blue/80'
-                }`}
+                className="btn-skew w-full text-center block text-white text-xs font-mono uppercase tracking-widest py-3.5 transition-all bg-g-red border border-g-red hover:bg-g-red/80"
               >
                 <span className="flex items-center justify-center gap-2">
-                  {isAdmin ? 'Access Admin Dashboard' : 'Sign In to Dashboard'}
+                  <ShieldCheck size={13} /> Access Admin Dashboard
                   <ArrowRight size={13} />
                 </span>
               </button>
 
-              {/* Divider */}
               <div className="flex items-center gap-3 my-2">
                 <div className="flex-1 h-px bg-white/6" />
                 <span className="text-white/25 text-xs font-mono">OR</span>
                 <div className="flex-1 h-px bg-white/6" />
               </div>
 
-              {/* Google Sign-in */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
@@ -311,20 +199,11 @@ export default function LoginPage() {
                 </svg>
                 {googleLoading ? 'Signing in...' : 'Continue with Google'}
               </button>
-
-              {!isAdmin && (
-                <p className="text-center text-xs text-white/30">
-                  Don&apos;t have an account?{' '}
-                  <Link href="/login" className="text-g-blue hover:text-white transition-colors">Join the community</Link>
-                </p>
-              )}
             </motion.form>
           </AnimatePresence>
         </div>
 
-        <p className="text-center text-white/20 text-xs font-mono mt-6">
-          © 2025 GDGOC IAR. Secured by Google Auth.
-        </p>
+        <p className="text-center text-white/20 text-xs font-mono mt-6">© 2025 GDGOC IAR Admin</p>
       </div>
     </div>
   );

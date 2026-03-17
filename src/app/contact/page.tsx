@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { SectionTitle } from '@/components/ui/SectionTitle';
+import { ContactFormCard } from '@/components/contact/ContactFormCard';
 import { Mail, MapPin, Phone, Linkedin, Instagram, Twitter, Github, Youtube } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -39,45 +40,7 @@ export default function ContactPage() {
           <div className="grid lg:grid-cols-5 gap-8">
             {/* Contact Form */}
             <div className="lg:col-span-3">
-              <GlassCard animate={false}>
-                <h2 className="font-heading text-lg font-bold text-white mb-6">Send a Message</h2>
-                <form className="space-y-5">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Your Name</label>
-                      <input type="text" placeholder="John Doe" className="form-input" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Email Address</label>
-                      <input type="email" placeholder="you@example.com" className="form-input" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Subject</label>
-                    <select className="form-input">
-                      <option className="bg-dark-card">General Inquiry</option>
-                      <option className="bg-dark-card">Event Collaboration</option>
-                      <option className="bg-dark-card">Partnership / Sponsorship</option>
-                      <option className="bg-dark-card">Feedback</option>
-                      <option className="bg-dark-card">Join the Team</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Message</label>
-                    <textarea
-                      rows={5}
-                      placeholder="Tell us how we can help..."
-                      className="form-input resize-none"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn-skew bg-g-blue border border-g-blue text-white text-xs font-mono uppercase tracking-widest px-8 py-3 hover:bg-g-blue/80 transition-all w-full"
-                  >
-                    <span>Send Message</span>
-                  </button>
-                </form>
-              </GlassCard>
+              <ContactFormCard />
             </div>
 
             {/* Info */}
@@ -123,6 +86,21 @@ export default function ContactPage() {
                       <span className="text-[9px] font-mono">{label}</span>
                     </a>
                   ))}
+                </div>
+              </GlassCard>
+
+              <GlassCard animate={false}>
+                <h3 className="section-number mb-4">Campus Map</h3>
+                <div className="rounded-lg overflow-hidden h-48 border border-white/10 relative">
+                  <iframe
+                    src="https://maps.google.com/maps?q=Institute%20of%20Advanced%20Research,%20Gandhinagar&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    className="absolute inset-0"
+                  ></iframe>
                 </div>
               </GlassCard>
 

@@ -9,7 +9,7 @@ export const mockTeam: TeamMember[] = [
   { id: 't3', name: 'Manthan Balani', role: 'Team Lead', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=ManthanBalani', bio: 'Leads technical projects, mentorship, and engineering standards for the chapter.', socials: { github: '#', linkedin: '#' } },
   { id: 't4', name: 'Chidatma Patel', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=ChidatmaPatel', bio: 'Builds and supports chapter products with a focus on clean implementation.', socials: { github: '#' } },
   { id: 't5', name: 'Devashya Jethva', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=DevashyaJethva', bio: 'Contributes to development, feature rollout, and technical collaboration.', socials: { github: '#' } },
-  { id: 't6', name: 'Neil Banerjee', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=NeilBanerjee', bio: 'Works on web experience, iteration speed, and deployment quality.', socials: { github: '#', linkedin: '#' } },
+  { id: 't6', name: 'Neil Banerjee', role: 'Team Member', team: 'tech', avatar: 'https://api.dicebear.com/7.x/micah/png?seed=Neil', bio: 'Works on web experience, iteration speed, and deployment quality.', socials: { github: '#', linkedin: '#' } },
 
   // Documentation Team
   { id: 't7', name: 'Naitri Mori', role: 'Team Lead', team: 'documentation', avatar: 'https://api.dicebear.com/7.x/lorelei/png?seed=NaitriMori', bio: 'Leads documentation planning and keeps chapter knowledge accessible.', socials: { linkedin: '#' } },

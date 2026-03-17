@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Calendar, Users, Trophy, Image, Megaphone,
-  LineChart, Settings, ChevronLeft, Home, LogOut, Menu, X, ShieldCheck
+  LineChart, Settings, ChevronLeft, Home, LogOut, Menu, X, ShieldCheck, MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getModulesForRole, DashboardModule } from '@/lib/rolePermissions';
@@ -17,6 +17,7 @@ const ALL_ADMIN_NAV: { module: DashboardModule; href: string; icon: React.ReactN
   { module: 'overview', href: '/dashboard/admin/overview', icon: <LayoutDashboard size={16} />, label: 'Overview' },
   { module: 'events', href: '/dashboard/admin/events', icon: <Calendar size={16} />, label: 'Events' },
   { module: 'users', href: '/dashboard/admin/users', icon: <Users size={16} />, label: 'Users' },
+  { module: 'queries', href: '/dashboard/admin/queries', icon: <MessageSquare size={16} />, label: 'Queries' },
   { module: 'leaderboard', href: '/dashboard/admin/leaderboard', icon: <Trophy size={16} />, label: 'Leaderboard' },
   { module: 'media', href: '/dashboard/admin/media', icon: <ImageIcon size={16} />, label: 'Media' },
   { module: 'announcements', href: '/dashboard/admin/announcements', icon: <Megaphone size={16} />, label: 'Announcements' },
@@ -42,6 +43,14 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('gdgoc-admin-session');
     localStorage.removeItem('adminRole');
     router.push('/admin');
+  };
+
+  const handleBackToSite = () => {
+    const session = localStorage.getItem('gdgoc-admin-session');
+    const role = localStorage.getItem('adminRole');
+    if (session) localStorage.setItem('gdgoc-admin-session', session);
+    if (role) localStorage.setItem('adminRole', role);
+    router.push('/');
   };
 
   const allowedModules = getModulesForRole(currentRole);
@@ -99,10 +108,10 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
 
         {/* Footer */}
         <div className="p-3 border-t border-white/5 space-y-1">
-          <Link href="/" className={cn('sidebar-link', collapsed && 'justify-center px-2')}>
+          <button onClick={handleBackToSite} className={cn('sidebar-link w-full', collapsed && 'justify-center px-2')}>
             <Home size={16} />
             {!collapsed && <span>Back to Site</span>}
-          </Link>
+          </button>
           <button onClick={handleLogout} className={cn('sidebar-link w-full', collapsed && 'justify-center px-2')}>
             <LogOut size={16} />
             {!collapsed && <span>Logout</span>}
@@ -152,10 +161,16 @@ function AdminDashboardContent({ children }: { children: React.ReactNode }) {
                 ))}
               </nav>
               <div className="mt-6 pt-4 border-t border-white/10 space-y-1">
-                <Link href="/" className="sidebar-link" onClick={() => setMobileOpen(false)}>
+                <button
+                  onClick={() => {
+                    setMobileOpen(false);
+                    handleBackToSite();
+                  }}
+                  className="sidebar-link w-full"
+                >
                   <Home size={16} />
                   <span>Back to Site</span>
-                </Link>
+                </button>
                 <button onClick={handleLogout} className="sidebar-link w-full">
                   <LogOut size={16} />
                   <span>Logout</span>

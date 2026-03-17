@@ -13,7 +13,7 @@ const footerLinks = {
     { label: 'About Us', href: '/about' },
     { label: 'Team', href: '/team' },
     { label: 'Contact', href: '/contact' },
-    { label: 'Join Us', href: '/login' },
+    { label: 'Join Us', href: '/login?mode=register' },
   ],
   Resources: [
     { label: 'Google Developers', href: 'https://developers.google.com' },

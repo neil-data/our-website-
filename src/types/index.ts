@@ -18,6 +18,12 @@ export interface FAQItem {
   answer: string;
 }
 
+export interface EventRegistrationField {
+  id: string;
+  label: string;
+  required: boolean;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -35,6 +41,10 @@ export interface Event {
   faq: FAQItem[];
   capacity: number;
   registered: number;
+  teamRegistration?: boolean;
+  teamMinSize?: number;
+  teamMaxSize?: number;
+  registrationFields?: EventRegistrationField[];
   tags: string[];
 }
 
@@ -105,6 +115,7 @@ export interface MediaItem {
   title: string;
   src: string;
   thumbnail: string;
+  link?: string;
   event?: string;
   date: string;
 }

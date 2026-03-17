@@ -1,14 +1,22 @@
 'use client';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { mockTeam } from '@/data/team';
+import { TeamMember } from '@/types';
+import { loadTeamMembers } from '@/lib/localStore';
 import { Github, Linkedin, Twitter, ArrowRight } from 'lucide-react';
 
-const leaders = mockTeam.filter(m => m.team === 'leader');
-
 export default function TeamPreviewSection() {
+  const [team, setTeam] = useState<TeamMember[]>([]);
+
+  useEffect(() => {
+    setTeam(loadTeamMembers());
+  }, []);
+
+  const leaders = useMemo(() => team.filter(m => m.team === 'leader').slice(0, 3), [team]);
+
   return (
     <section className="relative py-28 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

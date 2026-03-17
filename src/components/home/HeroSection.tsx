@@ -101,7 +101,7 @@ export default function HeroSection() {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
         >
           <Link
-            href="/login"
+            href="/login?mode=register"
             className="btn-skew bg-g-blue border border-g-blue text-white text-xs font-mono uppercase tracking-widest px-8 py-3.5 hover:bg-g-blue/80 transition-all flex items-center gap-2"
           >
             <span className="flex items-center gap-2">

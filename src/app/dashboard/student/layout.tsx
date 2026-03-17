@@ -3,14 +3,16 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Calendar, Trophy, Users, Image, User, ChevronLeft, Home, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Calendar, Trophy, Users, Image, User, ChevronLeft, Home, LogOut, Menu, X, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { loadUsers } from '@/lib/adminData';
 
 const ImageIcon = Image;
 
 const STUDENT_NAV = [
   { href: '/dashboard/student/overview', icon: <LayoutDashboard size={16} />, label: 'Overview' },
   { href: '/dashboard/student/my-events', icon: <Calendar size={16} />, label: 'My Events' },
+  { href: '/dashboard/student/queries', icon: <MessageSquare size={16} />, label: 'Queries' },
   { href: '/dashboard/student/leaderboard', icon: <Trophy size={16} />, label: 'Leaderboard' },
   { href: '/dashboard/student/community', icon: <Users size={16} />, label: 'Community' },
   { href: '/dashboard/student/media', icon: <ImageIcon size={16} />, label: 'Media' },
@@ -26,8 +28,24 @@ export default function StudentDashboardLayout({ children }: { children: React.R
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const session = localStorage.getItem('gdgoc-student-session');
-    if (!session) router.replace('/login');
+    const sessionRaw = localStorage.getItem('gdgoc-student-session');
+    if (!sessionRaw) {
+      router.replace('/login');
+      return;
+    }
+
+    try {
+      const session = JSON.parse(sessionRaw) as { email?: string };
+      const users = loadUsers();
+      const user = users.find(u => u.email.toLowerCase() === (session.email || '').toLowerCase());
+      if (user?.banned) {
+        localStorage.removeItem('gdgoc-student-session');
+        router.replace('/login');
+      }
+    } catch {
+      localStorage.removeItem('gdgoc-student-session');
+      router.replace('/login');
+    }
   }, [router]);
 
   const handleLogout = () => {

@@ -33,7 +33,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return (
       pathname.startsWith('/dashboard') ||
       pathname === '/login' ||
-      pathname === '/admin'
+      pathname === '/admin' ||
+      pathname === '/maintenance'
     );
   }, [pathname]);
 
@@ -42,10 +43,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const showMaintenanceScreen = maintenanceEnabled && !maintenanceBypass;
+  const showChrome = !hideLayoutChrome && !showMaintenanceScreen;
 
   return (
     <>
-      {!hideLayoutChrome && <Navbar />}
+      {showChrome && <Navbar />}
       <main className="min-h-screen">
         {showMaintenanceScreen ? (
           <section className="min-h-screen flex items-center justify-center px-4">
@@ -61,8 +63,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           children
         )}
       </main>
-      {!hideLayoutChrome && <Footer />}
-      {!hideLayoutChrome && <Chatbot />}
+      {showChrome && <Footer />}
+      {showChrome && <Chatbot />}
     </>
   );
 }

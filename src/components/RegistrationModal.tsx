@@ -3,25 +3,39 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { registerForEventWithDetails } from '@/lib/adminData';
+import { Event } from '@/types';
 
 interface RegistrationModalProps {
+  eventId: string;
+  event: Event;
   eventTitle: string;
   eventDate: string;
   isOpen: boolean;
   onClose: () => void;
+  onRegistered?: () => void;
 }
 
-export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClose }: RegistrationModalProps) {
+export default function RegistrationModal({ eventId, event, eventTitle, eventDate, isOpen, onClose, onRegistered }: RegistrationModalProps) {
   const [formData, setFormData] = useState({
-    fullName: '',
+    name: '',
     email: '',
-    college: '',
-    major: '',
+    iarNo: '',
+    department: '',
     year: '',
     agreeTerms: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const [teamName, setTeamName] = useState('');
+  const [members, setMembers] = useState([{ name: '', email: '' }]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  const teamEnabled = Boolean(event.teamRegistration);
+  const minTeamSize = event.teamMinSize || 2;
+  const maxTeamSize = event.teamMaxSize || 4;
+  const customFields = event.registrationFields || [];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -33,28 +47,80 @@ export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = formData.email.trim().toLowerCase();
+
+    if (!cleanEmail.endsWith('@iar.ac.in')) {
+      setError('Please use your @iar.ac.in email.');
+      return;
+    }
+
     if (!formData.agreeTerms) {
       alert('Please agree to terms and conditions');
       return;
     }
 
+    setError('');
+
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (teamEnabled) {
+      const activeMembers = members.filter(m => m.email.trim());
+      const totalSize = 1 + activeMembers.length;
+      if (!teamName.trim()) {
+        setError('Team name is required.');
+        setIsSubmitting(false);
+        return;
+      }
+      if (totalSize < minTeamSize || totalSize > maxTeamSize) {
+        setError(`Team size must be between ${minTeamSize} and ${maxTeamSize}.`);
+        setIsSubmitting(false);
+        return;
+      }
+      const invalidMember = activeMembers.find(m => !m.email.trim().toLowerCase().endsWith('@iar.ac.in'));
+      if (invalidMember) {
+        setError('All member emails must be @iar.ac.in');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const result = registerForEventWithDetails(eventId, {
+      name: formData.name,
+      email: cleanEmail,
+      iarNo: formData.iarNo,
+      department: formData.department,
+      year: formData.year,
+    }, {
+      teamName: teamEnabled ? teamName : undefined,
+      members: teamEnabled
+        ? members.filter(m => m.email.trim()).map(m => ({ name: m.name, email: m.email }))
+        : undefined,
+      customFieldValues,
+    });
+
+    if (!result.ok) {
+      setIsSubmitting(false);
+      setError(result.error || 'Registration failed.');
+      return;
+    }
+
     setSubmitted(true);
     setIsSubmitting(false);
 
     // Reset form after 2 seconds
     setTimeout(() => {
       setFormData({
-        fullName: '',
+        name: '',
         email: '',
-        college: '',
-        major: '',
+        iarNo: '',
+        department: '',
         year: '',
         agreeTerms: false,
       });
+      setTeamName('');
+      setMembers([{ name: '', email: '' }]);
+      setCustomFieldValues({});
       setSubmitted(false);
+      onRegistered?.();
       onClose();
     }, 2000);
   };
@@ -99,12 +165,12 @@ export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClo
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs text-white/60 font-semibold mb-2 uppercase tracking-wide">
-                  Full Name
+                  Name
                 </label>
                 <input
                   type="text"
-                  name="fullName"
-                  value={formData.fullName}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   required
                   placeholder="Your full name"
@@ -122,22 +188,22 @@ export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClo
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  placeholder="your.email@college.edu"
+                  placeholder="your.name@iar.ac.in"
                   className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-g-blue/50 transition-all"
                 />
               </div>
 
               <div>
                 <label className="block text-xs text-white/60 font-semibold mb-2 uppercase tracking-wide">
-                  College
+                  IAR No
                 </label>
                 <input
                   type="text"
-                  name="college"
-                  value={formData.college}
+                  name="iarNo"
+                  value={formData.iarNo}
                   onChange={handleChange}
                   required
-                  placeholder="Institute of Advanced Research"
+                  placeholder="IAR student number"
                   className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-g-blue/50 transition-all"
                 />
               </div>
@@ -145,13 +211,14 @@ export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClo
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-white/60 font-semibold mb-2 uppercase tracking-wide">
-                    Major
+                    Department
                   </label>
                   <input
                     type="text"
-                    name="major"
-                    value={formData.major}
+                    name="department"
+                    value={formData.department}
                     onChange={handleChange}
+                    required
                     placeholder="e.g., CSE"
                     className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-g-blue/50 transition-all text-sm"
                   />
@@ -176,6 +243,84 @@ export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClo
                 </div>
               </div>
 
+              {teamEnabled && (
+                <div className="space-y-3 border border-white/10 rounded-lg p-3">
+                  <div>
+                    <label className="block text-xs text-white/60 font-semibold mb-2 uppercase tracking-wide">Team Name</label>
+                    <input
+                      type="text"
+                      value={teamName}
+                      onChange={e => setTeamName(e.target.value)}
+                      placeholder="Your team name"
+                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white"
+                      required
+                    />
+                    <p className="text-[10px] text-white/35 mt-1">Team size for this event: {minTeamSize} to {maxTeamSize}</p>
+                  </div>
+                  {members.map((member, index) => (
+                    <div key={index} className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={member.name}
+                        onChange={e => setMembers(prev => prev.map((m, i) => (i === index ? { ...m, name: e.target.value } : m)))}
+                        placeholder="Member name (optional)"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm"
+                      />
+                      <input
+                        type="email"
+                        value={member.email}
+                        onChange={e => setMembers(prev => prev.map((m, i) => (i === index ? { ...m, email: e.target.value } : m)))}
+                        placeholder="member@iar.ac.in"
+                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded text-white text-sm"
+                      />
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (members.length + 1 < maxTeamSize) {
+                          setMembers(prev => [...prev, { name: '', email: '' }]);
+                        }
+                      }}
+                      className="text-xs text-g-blue hover:text-white"
+                    >
+                      + Add Member
+                    </button>
+                    {members.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setMembers(prev => prev.slice(0, -1))}
+                        className="text-xs text-g-red hover:text-white"
+                      >
+                        Remove Last
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {customFields.length > 0 && (
+                <div className="space-y-2 border border-white/10 rounded-lg p-3">
+                  {customFields.map(field => (
+                    <div key={field.id}>
+                      <label className="block text-xs text-white/60 font-semibold mb-1 uppercase tracking-wide">
+                        {field.label} {field.required ? '*' : ''}
+                      </label>
+                      <input
+                        type="text"
+                        value={customFieldValues[field.id] || ''}
+                        onChange={e => setCustomFieldValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                        required={field.required}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded text-white text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {error && <p className="text-xs text-g-red">{error}</p>}
+
               <label className="flex items-start gap-2 mt-4 cursor-pointer">
                 <input
                   type="checkbox"
@@ -191,7 +336,7 @@ export default function RegistrationModal({ eventTitle, eventDate, isOpen, onClo
 
               <button
                 type="submit"
-                disabled={isSubmitting || !formData.fullName || !formData.email || !formData.college || !formData.year}
+                disabled={isSubmitting || !formData.name || !formData.email || !formData.iarNo || !formData.department || !formData.year}
                 className="w-full mt-6 py-3 bg-gradient-to-r from-g-blue to-g-green text-white font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isSubmitting ? 'Registering...' : 'Complete Registration'}

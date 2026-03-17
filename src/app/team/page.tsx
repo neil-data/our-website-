@@ -1,10 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { mockTeam } from '@/data/team';
+import { loadTeamMembers } from '@/lib/localStore';
 import { AdminRole } from '@/types';
 import { Github, Linkedin, Twitter, Instagram } from 'lucide-react';
 
@@ -32,11 +32,16 @@ const COLOR_MAP: Record<string, string> = {
 
 export default function TeamPage() {
   const [active, setActive] = useState<TeamCategory>('all');
+  const [team, setTeam] = useState(loadTeamMembers());
+
+  useEffect(() => {
+    setTeam(loadTeamMembers());
+  }, []);
 
   const activeCategory = CATEGORIES.find(c => c.key === active)!;
   const members = active === 'all' 
-    ? mockTeam 
-    : mockTeam.filter(m => m.team === active);
+    ? team 
+    : team.filter(m => m.team === active);
 
   return (
     <div className="pt-20">

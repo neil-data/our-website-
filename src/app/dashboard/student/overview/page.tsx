@@ -10,6 +10,13 @@ import { Trophy, Calendar, Star, Bell } from 'lucide-react';
 interface StudentSession {
   name: string;
   email: string;
+  iarNo?: string;
+  department?: string;
+  year?: string;
+  phone?: string;
+  bio?: string;
+  github?: string;
+  linkedin?: string;
 }
 
 export default function StudentOverviewPage() {

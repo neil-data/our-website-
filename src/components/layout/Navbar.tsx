@@ -21,12 +21,25 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 30);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const syncAdminState = () => {
+      const session = localStorage.getItem('gdgoc-admin-session');
+      setAdminLoggedIn(Boolean(session));
+    };
+
+    syncAdminState();
+    window.addEventListener('storage', syncAdminState);
+
+    return () => window.removeEventListener('storage', syncAdminState);
   }, []);
 
   return (
@@ -78,6 +91,14 @@ export default function Navbar() {
 
             {/* CTA */}
             <div className="hidden md:flex items-center gap-3">
+              {adminLoggedIn && (
+                <Link
+                  href="/dashboard/admin/overview"
+                  className="text-xs font-mono uppercase tracking-widest text-g-red/80 hover:text-g-red transition-colors"
+                >
+                  Admin Panel
+                </Link>
+              )}
               <Link
                 href="/login"
                 className="text-xs font-mono uppercase tracking-widest text-white/50 hover:text-white transition-colors"
@@ -85,7 +106,7 @@ export default function Navbar() {
                 Login
               </Link>
               <Link
-                href="/login"
+                href="/login?mode=register"
                 className="btn-skew bg-g-blue border border-g-blue/80 text-white text-xs font-mono uppercase tracking-widest px-5 py-2 hover:bg-g-blue/80 transition-colors"
               >
                 <span>Join Now</span>
@@ -140,8 +161,16 @@ export default function Navbar() {
                 </motion.div>
               ))}
               <div className="mt-6 pt-6 border-t border-white/5">
+                {adminLoggedIn && (
+                  <Link
+                    href="/dashboard/admin/overview"
+                    className="block w-full text-center btn-skew bg-g-red/90 text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-red transition-colors mb-3"
+                  >
+                    <span>Admin Panel</span>
+                  </Link>
+                )}
                 <Link
-                  href="/login"
+                  href="/login?mode=register"
                   className="block w-full text-center btn-skew bg-g-blue text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-blue/80 transition-colors"
                 >
                   <span>Join the Community</span>
