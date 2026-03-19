@@ -89,20 +89,6 @@ export default function ContactPage() {
                 </div>
               </GlassCard>
 
-              <GlassCard animate={false}>
-                <h3 className="section-number mb-4">Campus Map</h3>
-                <div className="rounded-lg overflow-hidden h-48 border border-white/10 relative">
-                  <iframe
-                    src="https://maps.google.com/maps?q=Institute%20of%20Advanced%20Research,%20Gandhinagar&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    className="absolute inset-0"
-                  ></iframe>
-                </div>
-              </GlassCard>
 
               <GlassCard animate={false}>
                 <h3 className="section-number mb-4">Operating Hours</h3>
