@@ -4,9 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
-import { getFirebaseAuth } from '@/lib/firebaseClient';
 
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const isIarEmail = (value: string) => {
@@ -21,7 +19,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('leader');
   const [error, setError] = useState('');
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
     const adminSession = localStorage.getItem('gdgoc-admin-session');
@@ -44,36 +41,6 @@ export default function LoginPage() {
     }
     setError('');
     signIn(email);
-  };
-
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
-    setError('');
-
-    try {
-      const auth = getFirebaseAuth();
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account',
-        hd: 'iar.ac.in',
-      });
-
-      const result = await signInWithPopup(auth, provider);
-      const googleEmail = normalizeEmail(result.user.email || '');
-
-      if (!isIarEmail(googleEmail)) {
-        await signOut(auth);
-        setError('Google sign-in is only allowed for @iar.ac.in accounts.');
-        return;
-      }
-
-      setEmail(googleEmail);
-      signIn(googleEmail);
-    } catch {
-      setError('Google sign-in failed. Please try again.');
-    } finally {
-      setGoogleLoading(false);
-    }
   };
 
   return (
@@ -177,27 +144,6 @@ export default function LoginPage() {
                   <ShieldCheck size={13} /> Access Admin Dashboard
                   <ArrowRight size={13} />
                 </span>
-              </button>
-
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-white/6" />
-                <span className="text-white/25 text-xs font-mono">OR</span>
-                <div className="flex-1 h-px bg-white/6" />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={googleLoading}
-                className="w-full flex items-center justify-center gap-3 py-3 rounded border border-white/10 hover:border-white/25 hover:bg-white/3 transition-all text-sm text-white/70"
-              >
-                <svg width="16" height="16" viewBox="0 0 48 48" fill="none">
-                  <path d="M47.532 24.552c0-1.636-.142-3.21-.408-4.728H24v9.013h13.204c-.569 3.067-2.298 5.669-4.892 7.414v6.164h7.92c4.635-4.272 7.3-10.567 7.3-17.863z" fill="#4285F4"/>
-                  <path d="M24 48c6.636 0 12.198-2.202 16.264-5.972l-7.92-6.163c-2.194 1.47-5.001 2.338-8.344 2.338-6.418 0-11.854-4.337-13.8-10.167H2.012v6.364C6.06 43.117 14.452 48 24 48z" fill="#34A853"/>
-                  <path d="M10.2 28.036A14.478 14.478 0 019.456 24c0-1.41.242-2.78.744-4.036v-6.364H2.012A23.989 23.989 0 000 24c0 3.87.927 7.526 2.012 10.4l8.188-6.364z" fill="#FBBC05"/>
-                  <path d="M24 9.576c3.623 0 6.868 1.246 9.422 3.692l7.073-7.073C36.19 2.381 30.628 0 24 0 14.452 0 6.06 4.883 2.012 13.6l8.188 6.364C12.146 13.913 17.582 9.576 24 9.576z" fill="#EA4335"/>
-                </svg>
-                {googleLoading ? 'Signing in...' : 'Continue with Google'}
               </button>
             </motion.form>
           </AnimatePresence>
