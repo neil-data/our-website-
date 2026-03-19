@@ -1,4 +1,16 @@
-import { Event } from '@/types';
+import { 
+  Achievement, 
+  Announcement, 
+  ContactQuery, 
+  Event, 
+  EventRegistration, 
+  EventRegistrationWithUser, 
+  EventTeam, 
+  MediaItem, 
+  StudentUser, 
+  TeamMember,
+  SocialLinks 
+} from '@/types';
 import {
   collection,
   deleteDoc,
@@ -20,60 +32,21 @@ const CONTACT_QUERIES_COLLECTION = 'queries';
 const ANNOUNCEMENTS_COLLECTION = 'announcements';
 const MEDIA_COLLECTION = 'media';
 const TEAM_COLLECTION = 'team';
+const SETTINGS_COLLECTION = 'settings';
+const GLOBAL_SETTINGS_ID = 'global';
 
-export interface StudentUser {
-  id: string;
-  name: string;
-  email: string;
-  iarNo: string;
-  department: string;
-  year: string;
-  phone: string;
-  bio: string;
-  github: string;
-  linkedin: string;
-  points: number;
-  banned: boolean;
-  createdAt: string;
-}
-
-export interface EventRegistration {
-  id: string;
-  eventId: string;
-  userId: string;
-  name: string;
-  email: string;
-  iarNo: string;
-  department: string;
-  year: string;
-  teamId?: string;
-  teamName?: string;
-  isLeader?: boolean;
-  customFieldValues?: Record<string, string>;
-  registeredAt: string;
-}
-
-export interface EventRegistrationWithUser extends EventRegistration {
-  user: StudentUser;
-}
-
-export interface EventTeam {
-  teamId: string;
-  teamName: string;
-  members: EventRegistrationWithUser[];
-}
-
-export interface ContactQuery {
-  id: string;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  submittedAt: string;
-  repliedAt?: string;
-  adminReply?: string;
-  repliedBy?: string;
-  status: 'open' | 'replied';
+export interface GlobalSettings {
+  chapterName: string;
+  chapterEmail: string;
+  institution: string;
+  socials: SocialLinks;
+  maintenanceMode: boolean;
+  pointsConfig: {
+    eventAttended: number;
+    speaking: number;
+    organizing: number;
+    hackathonWin: number;
+  };
 }
 
 interface SessionPayload {
@@ -86,6 +59,7 @@ interface SessionPayload {
   bio?: string;
   github?: string;
   linkedin?: string;
+  avatar?: string;
 }
 
 interface TeamMemberInput {
@@ -304,13 +278,14 @@ export async function upsertUserFromSession(session: SessionPayload): Promise<{ 
     id: existing?.id || makeUserId(cleanEmail),
     name: (session.name || existing?.name || cleanEmail.split('@')[0]).trim(),
     email: cleanEmail,
-    iarNo: (session.iarNo ?? existing?.iarNo ?? '').trim(),
-    department: (session.department ?? existing?.department ?? '').trim(),
-    year: (session.year ?? existing?.year ?? '').trim(),
-    phone: (session.phone ?? existing?.phone ?? '').trim(),
-    bio: (session.bio ?? existing?.bio ?? '').trim(),
-    github: (session.github ?? existing?.github ?? '').trim(),
-    linkedin: (session.linkedin ?? existing?.linkedin ?? '').trim(),
+    iarNo: (session.iarNo || existing?.iarNo || '').trim(),
+    department: (session.department || existing?.department || '').trim(),
+    year: (session.year || existing?.year || '').trim(),
+    phone: (session.phone || existing?.phone || '').trim(),
+    bio: (session.bio || existing?.bio || '').trim(),
+    github: (session.github || existing?.github || '').trim(),
+    linkedin: (session.linkedin || existing?.linkedin || '').trim(),
+    avatar: (session.avatar || existing?.avatar || '').trim(),
     points: existing?.points ?? 0,
     banned: false,
     createdAt: existing?.createdAt || new Date().toISOString(),
@@ -661,7 +636,7 @@ export async function deleteManagedEvent(eventId: string): Promise<void> {
   await Promise.all(related.map(registration => deleteDoc(doc(db, REGISTRATIONS_COLLECTION, registration.id))));
 }
 
-import { Announcement, MediaItem, TeamMember } from '@/types';
+import { DEFAULT_TEAM } from './teamData';
 
 export async function loadAnnouncements(): Promise<Announcement[]> {
   try {
@@ -725,9 +700,11 @@ export async function deleteMedia(id: string): Promise<void> {
 
 export async function loadTeamMembers(): Promise<TeamMember[]> {
   try {
-    return await getCollectionDocs<TeamMember>(TEAM_COLLECTION);
+    const list = await getCollectionDocs<TeamMember>(TEAM_COLLECTION);
+    if (list.length > 0) return list;
+    return DEFAULT_TEAM;
   } catch {
-    return [];
+    return DEFAULT_TEAM;
   }
 }
 
@@ -740,4 +717,70 @@ export async function saveTeamMember(payload: TeamMember): Promise<TeamMember> {
 export async function deleteTeamMember(id: string): Promise<void> {
   const db = getFirebaseDb();
   await deleteDoc(doc(db, TEAM_COLLECTION, id));
+}
+
+export async function loadSettings(): Promise<GlobalSettings> {
+  try {
+    const db = getFirebaseDb();
+    const snap = await getDoc(doc(db, SETTINGS_COLLECTION, GLOBAL_SETTINGS_ID));
+    if (snap.exists()) return snap.data() as GlobalSettings;
+    return {
+      chapterName: 'GDGOC IAR',
+      chapterEmail: 'gdgoc@iar.ac.in',
+      institution: 'Institute of Advanced Research, Gandhinagar',
+      socials: {
+        github: 'https://github.com/gdgoc-iar',
+        linkedin: 'https://linkedin.com/company/gdgoc-iar',
+        instagram: 'https://instagram.com/gdgoc.iar',
+        twitter: 'https://twitter.com/gdgoc_iar',
+        youtube: 'https://youtube.com/@gdgoc.iar',
+      },
+      maintenanceMode: false,
+      pointsConfig: {
+        eventAttended: 50,
+        speaking: 200,
+        organizing: 150,
+        hackathonWin: 500,
+      },
+    };
+  } catch {
+    return {
+      chapterName: 'GDGOC IAR',
+      chapterEmail: 'gdgoc@iar.ac.in',
+      institution: 'Institute of Advanced Research, Gandhinagar',
+      socials: {},
+      maintenanceMode: false,
+      pointsConfig: {
+        eventAttended: 50,
+        speaking: 200,
+        organizing: 150,
+        hackathonWin: 500,
+      },
+    };
+  }
+}
+
+export async function saveSettings(settings: GlobalSettings): Promise<void> {
+  const db = getFirebaseDb();
+  await setDoc(doc(db, SETTINGS_COLLECTION, GLOBAL_SETTINGS_ID), cleanObj(settings));
+}
+
+export async function getGlobalStats() {
+  const [users, events, registrations, queries] = await Promise.all([
+    loadUsers(),
+    loadManagedEvents(),
+    loadRegistrations(),
+    loadContactQueries()
+  ]);
+
+  return {
+    totalUsers: users.length,
+    activeEvents: events.filter(e => e.status !== 'completed').length,
+    totalRegistrations: registrations.length,
+    openQueries: queries.filter(q => q.status === 'open').length,
+    events,
+    registrations,
+    users,
+    queries
+  };
 }

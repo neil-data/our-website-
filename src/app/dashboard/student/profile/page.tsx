@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
-import { Star, Award, Calendar, Code2 } from 'lucide-react';
+import { Star, Award, Calendar, Code2, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { upsertUserFromSession } from '@/lib/adminData';
 
 interface StudentSession {
@@ -16,6 +17,7 @@ interface StudentSession {
   phone?: string;
   github?: string;
   linkedin?: string;
+  avatar?: string;
 }
 
 export default function StudentProfilePage() {
@@ -31,6 +33,18 @@ export default function StudentProfilePage() {
   const [formPhone, setFormPhone] = useState('');
   const [formGithub, setFormGithub] = useState('');
   const [formLinkedin, setFormLinkedin] = useState('');
+  const [formAvatar, setFormAvatar] = useState('');
+
+  const AVATAR_OPTIONS = [
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Felix',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Aneka',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Nala',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Zoe',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Leo',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Milo',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Jasper',
+    'https://api.dicebear.com/7.x/avataaars/png?seed=Luna',
+  ];
 
   useEffect(() => {
     const raw = localStorage.getItem('gdgoc-student-session');
@@ -46,6 +60,7 @@ export default function StudentProfilePage() {
       setFormPhone(s.phone || '');
       setFormGithub(s.github || '');
       setFormLinkedin(s.linkedin || '');
+      setFormAvatar(s.avatar || '');
     }
   }, []);
 
@@ -61,6 +76,7 @@ export default function StudentProfilePage() {
       phone: formPhone,
       github: formGithub,
       linkedin: formLinkedin,
+      avatar: formAvatar,
     };
     localStorage.setItem('gdgoc-student-session', JSON.stringify(updated));
     await upsertUserFromSession(updated);
@@ -71,8 +87,7 @@ export default function StudentProfilePage() {
 
   const name = session?.name || 'Student';
   const email = session?.email || '';
-  const avatarSeed = encodeURIComponent(name.replace(/\s+/g, ''));
-  const avatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${avatarSeed}`;
+  const avatar = formAvatar || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(name.replace(/\s+/g, ''))}`;
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
@@ -163,6 +178,24 @@ export default function StudentProfilePage() {
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Bio</label>
                 <textarea value={formBio} onChange={e => setFormBio(e.target.value)} className="form-input resize-none" rows={3} placeholder="Tell us about yourself..." />
+              </div>
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-4">Choose Avatar</label>
+                <div className="flex flex-wrap gap-3">
+                  {AVATAR_OPTIONS.map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setFormAvatar(url)}
+                      className={cn(
+                        "relative w-12 h-12 rounded-full overflow-hidden border-2 transition-all hover:scale-110",
+                        formAvatar === url ? "border-g-blue scale-110" : "border-white/10"
+                      )}
+                    >
+                      <Image src={url} alt={`Avatar ${i}`} fill className="object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>

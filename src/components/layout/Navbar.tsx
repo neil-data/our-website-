@@ -22,6 +22,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+  const [studentLoggedIn, setStudentLoggedIn] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -31,15 +32,19 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const syncAdminState = () => {
-      const session = localStorage.getItem('gdgoc-admin-session');
-      setAdminLoggedIn(Boolean(session));
+    const syncState = () => {
+      setAdminLoggedIn(Boolean(localStorage.getItem('gdgoc-admin-session')));
+      setStudentLoggedIn(Boolean(localStorage.getItem('gdgoc-student-session')));
     };
 
-    syncAdminState();
-    window.addEventListener('storage', syncAdminState);
+    syncState();
+    window.addEventListener('storage', syncState);
+    const interval = setInterval(syncState, 2000);
 
-    return () => window.removeEventListener('storage', syncAdminState);
+    return () => {
+      window.removeEventListener('storage', syncState);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -99,18 +104,30 @@ export default function Navbar() {
                   Admin Panel
                 </Link>
               )}
-              <Link
-                href="/login"
-                className="text-xs font-mono uppercase tracking-widest text-white/50 hover:text-white transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/login?mode=register"
-                className="btn-skew bg-g-blue border border-g-blue/80 text-white text-xs font-mono uppercase tracking-widest px-5 py-2 hover:bg-g-blue/80 transition-colors"
-              >
-                <span>Join Now</span>
-              </Link>
+              {studentLoggedIn && (
+                <Link
+                  href="/dashboard/student/overview"
+                  className="text-xs font-mono uppercase tracking-widest text-g-green/80 hover:text-g-green transition-colors"
+                >
+                  Student Panel
+                </Link>
+              )}
+              {!studentLoggedIn && !adminLoggedIn && (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-xs font-mono uppercase tracking-widest text-white/50 hover:text-white transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/login?mode=register"
+                    className="btn-skew bg-g-blue border border-g-blue/80 text-white text-xs font-mono uppercase tracking-widest px-5 py-2 hover:bg-g-blue/80 transition-colors"
+                  >
+                    <span>Join Now</span>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile hamburger */}
@@ -160,21 +177,31 @@ export default function Navbar() {
                   </Link>
                 </motion.div>
               ))}
-              <div className="mt-6 pt-6 border-t border-white/5">
+              <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
                 {adminLoggedIn && (
                   <Link
                     href="/dashboard/admin/overview"
-                    className="block w-full text-center btn-skew bg-g-red/90 text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-red transition-colors mb-3"
+                    className="block w-full text-center btn-skew bg-g-red/90 text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-red transition-colors"
                   >
                     <span>Admin Panel</span>
                   </Link>
                 )}
-                <Link
-                  href="/login?mode=register"
-                  className="block w-full text-center btn-skew bg-g-blue text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-blue/80 transition-colors"
-                >
-                  <span>Join the Community</span>
-                </Link>
+                {studentLoggedIn && (
+                  <Link
+                    href="/dashboard/student/overview"
+                    className="block w-full text-center btn-skew bg-g-green/90 text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-green transition-colors"
+                  >
+                    <span>Student Panel</span>
+                  </Link>
+                )}
+                {!studentLoggedIn && !adminLoggedIn && (
+                  <Link
+                    href="/login?mode=register"
+                    className="block w-full text-center btn-skew bg-g-blue text-white text-xs font-mono uppercase tracking-widest py-3 hover:bg-g-blue/80 transition-colors"
+                  >
+                    <span>Join the Community</span>
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>

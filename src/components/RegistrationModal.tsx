@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { registerForEventWithDetails } from '@/lib/adminData';
@@ -31,6 +31,21 @@ export default function RegistrationModal({ eventId, event, eventTitle, eventDat
   const [teamName, setTeamName] = useState('');
   const [members, setMembers] = useState([{ name: '', email: '' }]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const raw = localStorage.getItem('gdgoc-student-session');
+    if (raw) {
+      const s = JSON.parse(raw);
+      setFormData(prev => ({
+        ...prev,
+        name: s.name || '',
+        email: s.email || '',
+        iarNo: s.iarNo || '',
+        department: s.department || '',
+        year: s.year || '',
+      }));
+    }
+  }, [isOpen]);
 
   const teamEnabled = Boolean(event.teamRegistration);
   const minTeamSize = event.teamMinSize || 2;

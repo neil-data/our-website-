@@ -52,7 +52,7 @@ export default function LoginPage() {
       setError(synced.error || 'Unable to sign in.');
       return;
     }
-    localStorage.setItem('gdgoc-student-session', JSON.stringify(sessionPayload));
+    localStorage.setItem('gdgoc-student-session', JSON.stringify(synced.user));
     router.push('/dashboard/student/overview');
   };
 

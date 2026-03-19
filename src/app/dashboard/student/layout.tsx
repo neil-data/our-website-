@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Calendar, Trophy, Users, Image, User, ChevronLeft, Home, LogOut, Menu, X, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Calendar, Trophy, Users, Image, User, ChevronLeft, Home, LogOut, Menu, X, MessageSquare, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { loadUsers } from '@/lib/adminData';
 
@@ -11,6 +11,7 @@ const ImageIcon = Image;
 
 const STUDENT_NAV = [
   { href: '/dashboard/student/overview', icon: <LayoutDashboard size={16} />, label: 'Overview' },
+  { href: '/dashboard/student/announcements', icon: <Bell size={16} />, label: 'Announcements' },
   { href: '/dashboard/student/my-events', icon: <Calendar size={16} />, label: 'My Events' },
   { href: '/dashboard/student/queries', icon: <MessageSquare size={16} />, label: 'Queries' },
   { href: '/dashboard/student/leaderboard', icon: <Trophy size={16} />, label: 'Leaderboard' },

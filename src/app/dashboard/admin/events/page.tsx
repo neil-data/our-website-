@@ -90,7 +90,10 @@ export default function AdminEventsPage() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!eventTitle.trim() || !eventDate || !eventDescription.trim()) return;
+    if (!eventTitle.trim() || !eventDate || !eventDescription.trim()) {
+      showNotice('Please fill in title, date, and description.');
+      return;
+    }
     await createManagedEvent({
       title: eventTitle.trim(),
       date: eventDate,
@@ -399,12 +402,12 @@ export default function AdminEventsPage() {
               <form onSubmit={handleCreateEvent} className="space-y-4">
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Event Title</label>
-                  <input className="form-input" value={eventTitle} onChange={e => setEventTitle(e.target.value)} />
+                  <input className="form-input" value={eventTitle} onChange={e => setEventTitle(e.target.value)} required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Date</label>
-                    <input type="date" className="form-input" value={eventDate} onChange={e => setEventDate(e.target.value)} />
+                    <input type="date" className="form-input" value={eventDate} onChange={e => setEventDate(e.target.value)} required />
                   </div>
                   <div>
                     <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Category</label>
@@ -468,7 +471,7 @@ export default function AdminEventsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Description</label>
-                  <textarea className="form-input resize-none" rows={3} value={eventDescription} onChange={e => setEventDescription(e.target.value)} />
+                  <textarea className="form-input resize-none" rows={3} value={eventDescription} onChange={e => setEventDescription(e.target.value)} required />
                 </div>
 
                 <div className="border border-white/10 rounded-lg p-3 space-y-3">

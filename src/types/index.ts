@@ -53,11 +53,68 @@ export interface Event {
 // ─── User / Team Types ────────────────────────────────────────────────────────
 export type AdminRole = 'leader' | 'tech' | 'marketing' | 'documentation' | 'operations' | 'outreach';
 
+export interface StudentUser {
+  id: string;
+  name: string;
+  email: string;
+  iarNo: string;
+  department: string;
+  year: string;
+  phone: string;
+  bio: string;
+  github: string;
+  linkedin: string;
+  avatar?: string;
+  points: number;
+  banned: boolean;
+  createdAt: string;
+}
+
+export interface EventRegistration {
+  id: string;
+  eventId: string;
+  userId: string;
+  name: string;
+  email: string;
+  iarNo: string;
+  department: string;
+  year: string;
+  teamId?: string;
+  teamName?: string;
+  isLeader?: boolean;
+  customFieldValues?: Record<string, string>;
+  registeredAt: string;
+}
+
+export interface EventRegistrationWithUser extends EventRegistration {
+  user: StudentUser;
+}
+
+export interface EventTeam {
+  teamId: string;
+  teamName: string;
+  members: EventRegistrationWithUser[];
+}
+
+export interface ContactQuery {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  submittedAt: string;
+  repliedAt?: string;
+  adminReply?: string;
+  repliedBy?: string;
+  status: 'open' | 'replied';
+}
+
 export interface SocialLinks {
   linkedin?: string;
   github?: string;
   twitter?: string;
   instagram?: string;
+  youtube?: string;
 }
 
 export interface TeamMember {

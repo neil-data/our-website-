@@ -2,19 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { GlobalSettings, loadSettings, saveSettings } from '@/lib/adminData';
 
 const MAINTENANCE_KEY = 'gdgoc-maintenance-mode';
 
 export default function AdminSettingsPage() {
-  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [settings, setSettings] = useState<GlobalSettings | null>(null);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const current = window.localStorage.getItem(MAINTENANCE_KEY) === 'on';
-    setMaintenanceMode(current);
+    loadSettings().then(setSettings);
   }, []);
 
+  const handleSave = async () => {
+    if (!settings) return;
+    await saveSettings(settings);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
   const updateMaintenanceMode = (enabled: boolean) => {
-    setMaintenanceMode(enabled);
+    if (!settings) return;
+    const next = { ...settings, maintenanceMode: enabled };
+    setSettings(next);
     window.localStorage.setItem(MAINTENANCE_KEY, enabled ? 'on' : 'off');
     window.dispatchEvent(new Event('maintenance-mode-changed'));
   };
@@ -33,15 +43,28 @@ export default function AdminSettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Chapter Name</label>
-              <input defaultValue="GDGOC IAR" className="form-input" />
+              <input 
+                value={settings?.chapterName || ''} 
+                onChange={e => setSettings(s => s ? {...s, chapterName: e.target.value} : null)}
+                className="form-input" 
+              />
             </div>
             <div>
               <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Chapter Email</label>
-              <input defaultValue="gdgoc@iar.ac.in" className="form-input" type="email" />
+              <input 
+                value={settings?.chapterEmail || ''} 
+                onChange={e => setSettings(s => s ? {...s, chapterEmail: e.target.value} : null)}
+                className="form-input" 
+                type="email" 
+              />
             </div>
             <div>
               <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Institution</label>
-              <input defaultValue="Institute of Advanced Research, Gandhinagar" className="form-input" />
+              <input 
+                value={settings?.institution || ''} 
+                onChange={e => setSettings(s => s ? {...s, institution: e.target.value} : null)}
+                className="form-input" 
+              />
             </div>
           </div>
         </GlassCard>
@@ -53,19 +76,39 @@ export default function AdminSettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Pts per Event Attended</label>
-                <input type="number" defaultValue={50} className="form-input" />
+                <input 
+                  type="number" 
+                  value={settings?.pointsConfig.eventAttended || 0} 
+                  onChange={e => setSettings(s => s ? {...s, pointsConfig: {...s.pointsConfig, eventAttended: parseInt(e.target.value)}} : null)}
+                  className="form-input" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Pts for Speaking</label>
-                <input type="number" defaultValue={200} className="form-input" />
+                <input 
+                  type="number" 
+                  value={settings?.pointsConfig.speaking || 0} 
+                  onChange={e => setSettings(s => s ? {...s, pointsConfig: {...s.pointsConfig, speaking: parseInt(e.target.value)}} : null)}
+                  className="form-input" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Pts for Organizing</label>
-                <input type="number" defaultValue={150} className="form-input" />
+                <input 
+                  type="number" 
+                  value={settings?.pointsConfig.organizing || 0} 
+                  onChange={e => setSettings(s => s ? {...s, pointsConfig: {...s.pointsConfig, organizing: parseInt(e.target.value)}} : null)}
+                  className="form-input" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Pts for Hackathon Win</label>
-                <input type="number" defaultValue={500} className="form-input" />
+                <input 
+                  type="number" 
+                  value={settings?.pointsConfig.hackathonWin || 0} 
+                  onChange={e => setSettings(s => s ? {...s, pointsConfig: {...s.pointsConfig, hackathonWin: parseInt(e.target.value)}} : null)}
+                  className="form-input" 
+                />
               </div>
             </div>
           </div>
@@ -75,10 +118,15 @@ export default function AdminSettingsPage() {
         <GlassCard animate={false}>
           <h2 className="section-number mb-5">Social Links</h2>
           <div className="space-y-3">
-            {['GitHub', 'LinkedIn', 'Instagram', 'Twitter', 'YouTube'].map(platform => (
+            {['github', 'linkedin', 'instagram', 'twitter', 'youtube'].map(platform => (
               <div key={platform}>
                 <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-1">{platform}</label>
-                <input className="form-input" placeholder={`https://${platform.toLowerCase()}.com/gdgoc-iar`} />
+                <input 
+                  className="form-input" 
+                  value={(settings?.socials as any)?.[platform] || ''}
+                  onChange={e => setSettings(s => s ? {...s, socials: {...s.socials, [platform]: e.target.value}} : null)}
+                  placeholder={`https://${platform.toLowerCase()}.com/gdgoc-iar`} 
+                />
               </div>
             ))}
           </div>
@@ -95,7 +143,7 @@ export default function AdminSettingsPage() {
               type="button"
               onClick={() => updateMaintenanceMode(true)}
               className={`btn-skew text-xs font-mono uppercase tracking-widest px-6 py-2.5 transition-all ${
-                maintenanceMode
+                settings?.maintenanceMode
                   ? 'bg-g-red border border-g-red text-white'
                   : 'bg-transparent border border-white/15 text-white/60 hover:border-white/30'
               }`}
@@ -106,7 +154,7 @@ export default function AdminSettingsPage() {
               type="button"
               onClick={() => updateMaintenanceMode(false)}
               className={`btn-skew text-xs font-mono uppercase tracking-widest px-6 py-2.5 transition-all ${
-                !maintenanceMode
+                !settings?.maintenanceMode
                   ? 'bg-g-green border border-g-green text-white'
                   : 'bg-transparent border border-white/15 text-white/60 hover:border-white/30'
               }`}
@@ -115,15 +163,21 @@ export default function AdminSettingsPage() {
             </button>
           </div>
           <p className="text-xs font-mono uppercase tracking-widest mt-4 text-white/35">
-            Current Status: {maintenanceMode ? 'ON' : 'OFF'}
+            Current Status: {settings?.maintenanceMode ? 'ON' : 'OFF'}
           </p>
         </GlassCard>
 
         <div className="flex gap-3">
-          <button className="btn-skew bg-g-blue border border-g-blue text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-g-blue/80 transition-all">
-            <span>Save All Settings</span>
+          <button 
+            onClick={handleSave}
+            className="btn-skew bg-g-blue border border-g-blue text-white text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:bg-g-blue/80 transition-all"
+          >
+            <span>{saved ? 'Saved ✓' : 'Save All Settings'}</span>
           </button>
-          <button className="btn-skew bg-transparent border border-white/15 text-white/60 text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:border-white/30 transition-all">
+          <button 
+            onClick={() => loadSettings().then(setSettings)}
+            className="btn-skew bg-transparent border border-white/15 text-white/60 text-xs font-mono uppercase tracking-widest px-6 py-2.5 hover:border-white/30 transition-all"
+          >
             <span>Reset Defaults</span>
           </button>
         </div>

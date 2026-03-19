@@ -1,23 +1,26 @@
-import { Metadata } from 'next';
+'use client';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { ContactFormCard } from '@/components/contact/ContactFormCard';
 import { Mail, MapPin, Phone, Linkedin, Instagram, Twitter, Github, Youtube } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { GlobalSettings, loadSettings } from '@/lib/adminData';
 
-export const metadata: Metadata = {
-  title: 'Contact — GDGOC IAR',
-  description: 'Get in touch with GDGOC at the Institute of Advanced Research.',
-};
-
-const socials = [
-  { Icon: Github, label: 'GitHub', href: '#', color: 'hover:text-white' },
-  { Icon: Linkedin, label: 'LinkedIn', href: '#', color: 'hover:text-g-blue' },
-  { Icon: Instagram, label: 'Instagram', href: '#', color: 'hover:text-g-red' },
-  { Icon: Twitter, label: 'Twitter', href: '#', color: 'hover:text-g-blue' },
-  { Icon: Youtube, label: 'YouTube', href: '#', color: 'hover:text-g-red' },
-];
 
 export default function ContactPage() {
+  const [settings, setSettings] = useState<GlobalSettings | null>(null);
+
+  useEffect(() => {
+    loadSettings().then(setSettings);
+  }, []);
+
+  const socials = [
+    { Icon: Github, label: 'GitHub', href: settings?.socials.github || '#', color: 'hover:text-white' },
+    { Icon: Linkedin, label: 'LinkedIn', href: settings?.socials.linkedin || '#', color: 'hover:text-g-blue' },
+    { Icon: Instagram, label: 'Instagram', href: settings?.socials.instagram || '#', color: 'hover:text-g-red' },
+    { Icon: Twitter, label: 'Twitter', href: settings?.socials.twitter || '#', color: 'hover:text-g-blue' },
+    { Icon: Youtube, label: 'YouTube', href: settings?.socials.youtube || '#', color: 'hover:text-g-red' },
+  ];
   return (
     <div className="pt-20">
       {/* Hero */}
