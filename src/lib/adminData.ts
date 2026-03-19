@@ -104,6 +104,7 @@ const normalizeEvent = (event: Event): Event => ({
 
 async function getCollectionDocs<T extends { id: string }>(name: string): Promise<T[]> {
   const db = getFirebaseDb();
+  if (!db) throw new Error('Database not initialized');
   const snapshot = await getDocs(collection(db, name));
   return snapshot.docs.map(snap => ({ id: snap.id, ...(snap.data() as Omit<T, 'id'>) } as T));
 }

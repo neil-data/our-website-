@@ -23,6 +23,12 @@ export function getFirebaseAuth() {
     .map(([key]) => key);
 
   if (missing.length > 0) {
+    // If we're on the server during build, don't crash, just return null.
+    // The library functions using this should handle the null/catch error.
+    if (typeof window === 'undefined') {
+      console.warn(`Firebase Auth missing keys: ${missing.join(', ')}`);
+      return null as any;
+    }
     throw new Error(`Firebase is not configured. Missing: ${missing.join(', ')}`);
   }
 
@@ -41,6 +47,10 @@ export function getFirebaseDb() {
     .map(([key]) => key);
 
   if (missing.length > 0) {
+    if (typeof window === 'undefined') {
+      console.warn(`Firebase Firestore missing keys: ${missing.join(', ')}`);
+      return null as any;
+    }
     throw new Error(`Firebase is not configured. Missing: ${missing.join(', ')}`);
   }
 
