@@ -2,13 +2,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
-import { mockEvents } from '@/data/events';
+import { getEventsWithRegistrationCounts } from '@/lib/adminData';
 import { getCategoryColor, getStatusColor, formatDateShort } from '@/lib/utils';
 import { Calendar, MapPin, Clock } from 'lucide-react';
 
-const upcomingEvents = mockEvents.filter(e => e.status !== 'completed').slice(0, 6);
+export default async function StudentMyEventsPage() {
+  const events = await getEventsWithRegistrationCounts();
+  const upcomingEvents = events.filter(e => e.status !== 'completed').slice(0, 6);
 
-export default function StudentMyEventsPage() {
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="mb-8">

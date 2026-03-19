@@ -5,14 +5,14 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { TeamMember } from '@/types';
-import { loadTeamMembers } from '@/lib/localStore';
+import { loadTeamMembers } from '@/lib/adminData';
 import { Github, Linkedin, Twitter, ArrowRight } from 'lucide-react';
 
 export default function TeamPreviewSection() {
   const [team, setTeam] = useState<TeamMember[]>([]);
 
   useEffect(() => {
-    setTeam(loadTeamMembers());
+    loadTeamMembers().then(setTeam);
   }, []);
 
   const leaders = useMemo(() => team.filter(m => m.team === 'leader').slice(0, 3), [team]);

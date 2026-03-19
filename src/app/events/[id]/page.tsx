@@ -13,6 +13,7 @@ import RegistrationModal from '@/components/RegistrationModal';
 import { getCategoryColor, getStatusColor, formatDate } from '@/lib/utils';
 import { Calendar, MapPin, Users, Clock, ChevronDown, ArrowLeft, ExternalLink } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import { Event } from '@/types';
 
 function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
@@ -52,11 +53,34 @@ const scheduleColors: Record<string, string> = {
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [events, setEvents] = useState(getEventsWithRegistrationCounts());
-  const event = events.find(e => e.id === id);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    setEvents(getEventsWithRegistrationCounts());
+    let mounted = true;
+    (async () => {
+      const nextEvents = await getEventsWithRegistrationCounts();
+      if (mounted) {
+        setEvents(nextEvents);
+        setIsLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="pt-32 pb-20 max-w-7xl mx-auto px-4 text-center">
+        <div className="w-8 h-8 rounded-full border-2 border-t-g-blue border-r-g-red border-b-g-yellow border-l-g-green animate-spin mx-auto mb-4" />
+        <p className="text-white/40 text-sm font-mono uppercase tracking-widest">Loading Event Details...</p>
+      </div>
+    );
+  }
+
+  const event = events.find(e => e.id === id);
   if (!event) notFound();
 
   const registrationPercent = Math.round((event.registered / event.capacity) * 100);
@@ -196,6 +220,31 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               {event.status !== 'completed' && event.registered < event.capacity && (
                 <p className="text-xs text-white/25 text-center mt-3 font-mono">Free • No hidden charges</p>
               )}
+
+              {(event.joinLink || event.registrationFormUrl) && (
+                <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
+                  {event.registrationFormUrl && (
+                    <a
+                      href={event.registrationFormUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 text-xs font-mono uppercase tracking-widest border border-g-green/40 text-g-green py-2 rounded hover:bg-g-green/10 transition-colors"
+                    >
+                      <ExternalLink size={12} /> Open Registration Form
+                    </a>
+                  )}
+                  {event.joinLink && (
+                    <a
+                      href={event.joinLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 text-xs font-mono uppercase tracking-widest border border-g-blue/40 text-g-blue py-2 rounded hover:bg-g-blue/10 transition-colors"
+                    >
+                      <ExternalLink size={12} /> Join Event Link
+                    </a>
+                  )}
+                </div>
+              )}
             </GlassCard>
 
             {/* Share */}
@@ -216,7 +265,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         event={event}
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
-        onRegistered={() => setEvents(getEventsWithRegistrationCounts())}
+        onRegistered={async () => setEvents(await getEventsWithRegistrationCounts())}
         eventTitle={event.title}
         eventDate={formatDate(event.date)}
       />

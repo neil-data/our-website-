@@ -3,17 +3,31 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
-import { mockLeaderboard } from '@/data/leaderboard';
+import { loadUsers, StudentUser } from '@/lib/adminData';
 import { getBadgeColor } from '@/lib/utils';
 import { Trophy, Star } from 'lucide-react';
 
 export default function StudentLeaderboardPage() {
   const [userName, setUserName] = useState('');
+  const [email, setEmail] = useState('');
+  const [users, setUsers] = useState<StudentUser[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem('gdgoc-student-session');
-    if (raw) setUserName(JSON.parse(raw).name || '');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      setUserName(parsed.name || '');
+      setEmail(parsed.email || '');
+    }
+
+    (async () => {
+      const fetched = await loadUsers();
+      setUsers(fetched.sort((a, b) => b.points - a.points));
+    })();
   }, []);
+
+  const myRank = users.findIndex(u => u.email === email) + 1;
+  const myPoints = users.find(u => u.email === email)?.points || 0;
 
   return (
     <div className="p-6 md:p-8 max-w-3xl mx-auto">
@@ -30,10 +44,10 @@ export default function StudentLeaderboardPage() {
         <div className="flex-1">
           <div className="text-xs font-mono text-white/40 uppercase tracking-widest mb-1">Your Current Rank</div>
           <div className="flex items-center gap-3">
-            <span className="font-heading text-4xl font-bold text-g-yellow">—</span>
+            <span className="font-heading text-4xl font-bold text-g-yellow">{myRank > 0 ? `#${myRank}` : '—'}</span>
             <div>
               <div className="text-sm text-white font-medium">{userName || 'Student'}</div>
-              <div className="flex items-center gap-1 text-xs text-white/40 font-mono"><Star size={10} />Not ranked yet</div>
+              <div className="flex items-center gap-1 text-xs text-white/40 font-mono"><Star size={10} />{myRank > 0 ? `${myPoints} points` : 'Not ranked yet'}</div>
             </div>
           </div>
         </div>
@@ -52,19 +66,21 @@ export default function StudentLeaderboardPage() {
             </tr>
           </thead>
           <tbody>
-            {mockLeaderboard.map((entry) => (
-              <tr key={entry.userId}>
+            {users.map((entry, index) => (
+              <tr key={entry.id}>
                 <td>
-                  <span className="font-mono text-xs text-white/40">#{entry.rank}</span>
+                  <span className="font-mono text-xs text-white/40">#{index + 1}</span>
                 </td>
                 <td>
                   <div className="flex items-center gap-3">
                     <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
-                      <Image src={entry.avatar} alt={entry.name} fill className="object-cover" />
+                      <Image src={`https://api.dicebear.com/7.x/avataaars/png?seed=${entry.name.replace(/ /g, '')}`} alt={entry.name} fill className="object-cover" />
                     </div>
                     <div>
                       <div className="text-sm text-white font-medium">{entry.name}</div>
-                      <Badge variant={getBadgeColor(entry.badge)} className="mt-0.5 text-[10px] py-0 capitalize">{entry.badge.replace('-', ' ')}</Badge>
+                      <Badge variant={getBadgeColor(entry.points > 300 ? 'influencer' : entry.points > 100 ? 'core-team' : 'contributor')} className="mt-0.5 text-[10px] py-0 capitalize">
+                        {entry.points > 300 ? 'Influencer' : entry.points > 100 ? 'Core Team' : 'Contributor'}
+                      </Badge>
                     </div>
                   </div>
                 </td>

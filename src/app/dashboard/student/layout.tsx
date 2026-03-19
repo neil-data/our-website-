@@ -28,24 +28,28 @@ export default function StudentDashboardLayout({ children }: { children: React.R
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const sessionRaw = localStorage.getItem('gdgoc-student-session');
-    if (!sessionRaw) {
-      router.replace('/login');
-      return;
-    }
+    const checkSession = async () => {
+      const sessionRaw = localStorage.getItem('gdgoc-student-session');
+      if (!sessionRaw) {
+        router.replace('/login');
+        return;
+      }
 
-    try {
-      const session = JSON.parse(sessionRaw) as { email?: string };
-      const users = loadUsers();
-      const user = users.find(u => u.email.toLowerCase() === (session.email || '').toLowerCase());
-      if (user?.banned) {
+      try {
+        const session = JSON.parse(sessionRaw) as { email?: string };
+        const users = await loadUsers();
+        const user = users.find(u => u.email.toLowerCase() === (session.email || '').toLowerCase());
+        if (user?.banned) {
+          localStorage.removeItem('gdgoc-student-session');
+          router.replace('/login');
+        }
+      } catch {
         localStorage.removeItem('gdgoc-student-session');
         router.replace('/login');
       }
-    } catch {
-      localStorage.removeItem('gdgoc-student-session');
-      router.replace('/login');
-    }
+    };
+
+    void checkSession();
   }, [router]);
 
   const handleLogout = () => {

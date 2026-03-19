@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mockTeam } from '@/data/team';
-import { mockEvents } from '@/data/events';
-import { mockLeaderboard } from '@/data/leaderboard';
+import { loadManagedEvents, loadUsers, loadTeamMembers } from '@/lib/adminData';
 
 // Build context from site data
-function buildSystemContext() {
-  const teamInfo = mockTeam.slice(0, 5).map(m => `${m.name} (${m.role})`).join(', ');
-  const upcomingEvents = mockEvents.slice(0, 3).map(e => `${e.title} on ${e.date}`).join('; ');
-  const topMembers = mockLeaderboard.slice(0, 3).map(m => `${m.name} - ${m.points} points`).join(', ');
+async function buildSystemContext() {
+  const [events, users, team] = await Promise.all([
+    loadManagedEvents(),
+    loadUsers(),
+    loadTeamMembers()
+  ]);
 
-return `You are the official GDGOC IAR Chatbot, an AI assistant strictly for the Google Developer Group on Campus at IAR.
+  const sortedUsers = [...users].sort((a, b) => b.points - a.points);
+  const teamInfo = team.slice(0, 5).map(m => `${m.name} (${m.role})`).join(', ');
+  const upcomingEvents = events.slice(0, 3).map(e => `${e.title} on ${e.date}`).join('; ');
+  const topMembers = sortedUsers.slice(0, 3).map(m => `${m.name} - ${m.points} points`).join(', ');
+
+  return `You are the official GDGOC IAR Chatbot, an AI assistant strictly for the Google Developer Group on Campus at IAR.
 Your sole purpose is to answer questions related to GDGOC, our events, our team, the leaderboard, and Google technologies.
 
 Here is the current context about our college chapter:
@@ -56,7 +61,7 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: 'system',
-            content: buildSystemContext(),
+            content: await buildSystemContext(),
           },
           ...messages,
         ],

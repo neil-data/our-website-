@@ -20,7 +20,15 @@ export default function EventsPage() {
   const [status, setStatus] = useState('all');
 
   useEffect(() => {
-    setEvents(getEventsWithRegistrationCounts());
+    let mounted = true;
+    (async () => {
+      const nextEvents = await getEventsWithRegistrationCounts();
+      if (mounted) setEvents(nextEvents);
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filtered = events.filter((e: Event) => {

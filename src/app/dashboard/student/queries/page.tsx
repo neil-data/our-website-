@@ -2,24 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { ContactQuery, getQueriesForStudent } from '@/lib/adminData';
+import type { ContactQuery } from '../../../../lib/adminData';
+import { getQueriesForStudent } from '../../../../lib/adminData';
 import { MessageSquare, Clock4, CheckCircle2 } from 'lucide-react';
 
 export default function StudentQueriesPage() {
   const [queries, setQueries] = useState<ContactQuery[]>([]);
 
   useEffect(() => {
-    const sessionRaw = localStorage.getItem('gdgoc-student-session');
-    if (!sessionRaw) return;
+    const load = async () => {
+      const sessionRaw = localStorage.getItem('gdgoc-student-session');
+      if (!sessionRaw) return;
 
-    try {
-      const session = JSON.parse(sessionRaw) as { email?: string };
-      if (!session.email) return;
-      const mine = getQueriesForStudent(session.email).sort((a, b) => +new Date(b.submittedAt) - +new Date(a.submittedAt));
-      setQueries(mine);
-    } catch {
-      setQueries([]);
-    }
+      try {
+        const session = JSON.parse(sessionRaw) as { email?: string };
+        if (!session.email) return;
+        const mine = (await getQueriesForStudent(session.email)).sort(
+          (a: ContactQuery, b: ContactQuery) => +new Date(b.submittedAt) - +new Date(a.submittedAt)
+        );
+        setQueries(mine);
+      } catch {
+        setQueries([]);
+      }
+    };
+
+    void load();
   }, []);
 
   return (

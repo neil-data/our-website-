@@ -83,7 +83,7 @@ export default function RegistrationModal({ eventId, event, eventTitle, eventDat
       }
     }
 
-    const result = registerForEventWithDetails(eventId, {
+    const result = await registerForEventWithDetails(eventId, {
       name: formData.name,
       email: cleanEmail,
       iarNo: formData.iarNo,

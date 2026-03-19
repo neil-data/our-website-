@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Play } from 'lucide-react';
 
 const stats = [
-  { value: '500+', label: 'Members' },
-  { value: '40+', label: 'Events' },
-  { value: '25+', label: 'Workshops' },
-  { value: '8+', label: 'Partners' },
+  { value: '100+', label: 'Members' },
+  { value: '2+', label: 'Events' },
+  { value: '1+', label: 'Workshops' },
+  { value: '1+', label: 'Partners' },
 ];
 
 const GOOGLE_COLORS = ['#4285F4', '#EA4335', '#FBBC05', '#34A853'];

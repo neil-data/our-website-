@@ -4,13 +4,13 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Badge } from '@/components/ui/Badge';
-import { mockEvents } from '@/data/events';
+import { Event } from '@/types';
 import { getCategoryColor, getStatusColor, formatDateShort } from '@/lib/utils';
 import { Calendar, MapPin, Users, ArrowRight } from 'lucide-react';
 
-const upcomingEvents = mockEvents.filter(e => e.status !== 'completed').slice(0, 4);
+export default function UpcomingEventsSection({ events }: { events: Event[] }) {
+  const upcomingEvents = events.filter(e => e.status !== 'completed').slice(0, 4);
 
-export default function UpcomingEventsSection() {
   return (
     <section className="relative py-28 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

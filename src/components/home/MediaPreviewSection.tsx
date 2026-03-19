@@ -3,12 +3,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
-import { mockMedia } from '@/data/media';
+import { MediaItem } from '@/types';
 import { ArrowRight, Camera } from 'lucide-react';
 
-const preview = mockMedia.slice(0, 6);
-
-export default function MediaPreviewSection() {
+export default function MediaPreviewSection({ media = [] }: { media?: MediaItem[] }) {
+  const preview = media.slice(0, 6);
   return (
     <section className="relative py-28 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

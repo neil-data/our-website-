@@ -27,11 +27,11 @@ export function ContactFormCard() {
     }
   }, []);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
-    const result = submitContactQuery({ name, email, subject, message });
+    const result = await submitContactQuery({ name, email, subject, message });
     if (!result.ok) {
       setStatus({ type: 'error', text: result.error || 'Unable to send your message right now.' });
       setSubmitting(false);

@@ -11,6 +11,7 @@ import {
   banUserPermanently,
   createManagedEvent,
   deleteManagedEvent,
+  EventTeam,
   EventRegistrationWithUser,
   getEventsWithRegistrationCounts,
   getRegistrationsForEvent,
@@ -30,12 +31,16 @@ export default function AdminEventsPage() {
   const [users, setUsers] = useState<StudentUser[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [registrations, setRegistrations] = useState<EventRegistrationWithUser[]>([]);
+  const [teams, setTeams] = useState<EventTeam[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventCategory, setEventCategory] = useState<Event['category']>('workshop');
   const [eventStatus, setEventStatus] = useState<Event['status']>('registration-open');
   const [eventLocation, setEventLocation] = useState('IAR Campus');
+  const [eventJoinLink, setEventJoinLink] = useState('');
+  const [eventRegistrationFormUrl, setEventRegistrationFormUrl] = useState('');
+  const [eventBanner, setEventBanner] = useState('');
   const [eventDescription, setEventDescription] = useState('');
   const [eventCapacity, setEventCapacity] = useState(100);
   const [selectedUserId, setSelectedUserId] = useState('');
@@ -50,20 +55,32 @@ export default function AdminEventsPage() {
   const [teamMemberName, setTeamMemberName] = useState('');
   const [teamMemberEmail, setTeamMemberEmail] = useState('');
 
-  const refreshData = () => {
-    setEvents(getEventsWithRegistrationCounts());
-    setUsers(loadUsers());
+  const refreshData = async () => {
+    const [nextEvents, nextUsers] = await Promise.all([
+      getEventsWithRegistrationCounts(),
+      loadUsers(),
+    ]);
+    setEvents(nextEvents);
+    setUsers(nextUsers);
+
     if (selectedEventId) {
-      setRegistrations(getRegistrationsForEvent(selectedEventId));
+      const [nextRegistrations, nextTeams] = await Promise.all([
+        getRegistrationsForEvent(selectedEventId),
+        getTeamsForEvent(selectedEventId),
+      ]);
+      setRegistrations(nextRegistrations);
+      setTeams(nextTeams);
+    } else {
+      setRegistrations([]);
+      setTeams([]);
     }
   };
 
   useEffect(() => {
-    refreshData();
+    void refreshData();
   }, [selectedEventId]);
 
   const selectedEvent = useMemo(() => events.find(event => event.id === selectedEventId) || null, [events, selectedEventId]);
-  const teams = useMemo(() => (selectedEventId ? getTeamsForEvent(selectedEventId) : []), [selectedEventId, registrations]);
   const availableUsers = users.filter(user => !user.banned);
 
   const showNotice = (text: string) => {
@@ -71,15 +88,18 @@ export default function AdminEventsPage() {
     window.setTimeout(() => setMessage(''), 2500);
   };
 
-  const handleCreateEvent = (e: React.FormEvent) => {
+  const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventTitle.trim() || !eventDate || !eventDescription.trim()) return;
-    createManagedEvent({
+    await createManagedEvent({
       title: eventTitle.trim(),
       date: eventDate,
       category: eventCategory,
       status: eventStatus,
       location: eventLocation.trim(),
+      joinLink: eventJoinLink.trim() || undefined,
+      registrationFormUrl: eventRegistrationFormUrl.trim() || undefined,
+      banner: eventBanner.trim() || undefined,
       description: eventDescription.trim(),
       shortDesc: eventDescription.trim().slice(0, 110),
       capacity: eventCapacity,
@@ -93,6 +113,9 @@ export default function AdminEventsPage() {
     setEventTitle('');
     setEventDate('');
     setEventLocation('IAR Campus');
+    setEventJoinLink('');
+    setEventRegistrationFormUrl('');
+    setEventBanner('');
     setEventDescription('');
     setEventCapacity(100);
     setTeamEnabled(false);
@@ -101,23 +124,28 @@ export default function AdminEventsPage() {
     setRegistrationFields([]);
     setFieldLabel('');
     setFieldRequired(false);
-    refreshData();
+    await refreshData();
   };
 
-  const handleOpenEvent = (eventId: string) => {
+  const handleOpenEvent = async (eventId: string) => {
     setSelectedEventId(eventId);
-    setRegistrations(getRegistrationsForEvent(eventId));
+    const [nextRegistrations, nextTeams] = await Promise.all([
+      getRegistrationsForEvent(eventId),
+      getTeamsForEvent(eventId),
+    ]);
+    setRegistrations(nextRegistrations);
+    setTeams(nextTeams);
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!selectedEventId || !selectedUserId) return;
-    const result = addUserToEvent(selectedEventId, selectedUserId);
+    const result = await addUserToEvent(selectedEventId, selectedUserId);
     if (!result.ok) {
       showNotice(result.error || 'Unable to add user.');
       return;
     }
     setSelectedUserId('');
-    refreshData();
+    await refreshData();
     showNotice('User added to event.');
   };
 
@@ -197,12 +225,12 @@ export default function AdminEventsPage() {
                   <td className="hidden lg:table-cell"><span className="text-xs text-white/40 font-mono">{event.registered}/{event.capacity}</span></td>
                   <td>
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleOpenEvent(event.id)} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-blue hover:border-g-blue/30 transition-colors"><Eye size={12} /></button>
+                      <button onClick={() => void handleOpenEvent(event.id)} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-blue hover:border-g-blue/30 transition-colors"><Eye size={12} /></button>
                       <button
-                        onClick={() => {
-                          deleteManagedEvent(event.id);
+                        onClick={async () => {
+                          await deleteManagedEvent(event.id);
                           if (selectedEventId === event.id) setSelectedEventId(null);
-                          refreshData();
+                          await refreshData();
                         }}
                         className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"
                       ><Trash2 size={12} /></button>
@@ -239,7 +267,7 @@ export default function AdminEventsPage() {
                 <option key={user.id} value={user.id} className="bg-dark-card">{user.name} ({user.email})</option>
               ))}
             </select>
-            <button onClick={handleAddUser} className="btn-skew bg-g-green border border-g-green text-white text-xs font-mono uppercase tracking-widest px-5 py-2.5 hover:bg-g-green/80 transition-all flex items-center gap-2">
+            <button onClick={() => void handleAddUser()} className="btn-skew bg-g-green border border-g-green text-white text-xs font-mono uppercase tracking-widest px-5 py-2.5 hover:bg-g-green/80 transition-all flex items-center gap-2">
               <span className="flex items-center gap-2"><UserPlus size={12} /> Add User</span>
             </button>
           </div>
@@ -260,16 +288,16 @@ export default function AdminEventsPage() {
                 <input value={teamMemberEmail} onChange={e => setTeamMemberEmail(e.target.value)} className="form-input" placeholder="member@iar.ac.in" />
               </div>
               <button
-                onClick={() => {
+                onClick={async () => {
                   if (!selectedEventId || !teamTarget || !teamMemberEmail.trim()) return;
-                  const result = addMemberToTeam(selectedEventId, teamTarget, { name: teamMemberName, email: teamMemberEmail });
+                  const result = await addMemberToTeam(selectedEventId, teamTarget, { name: teamMemberName, email: teamMemberEmail });
                   if (!result.ok) {
                     showNotice(result.error || 'Unable to add member.');
                     return;
                   }
                   setTeamMemberName('');
                   setTeamMemberEmail('');
-                  refreshData();
+                  await refreshData();
                   showNotice('Member added to team.');
                 }}
                 className="btn-skew bg-g-blue border border-g-blue text-white text-xs font-mono uppercase tracking-widest px-4 py-2 hover:bg-g-blue/80 transition-all"
@@ -305,37 +333,37 @@ export default function AdminEventsPage() {
                     <td>
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             const name = window.prompt('Name', reg.name) || reg.name;
                             const email = window.prompt('Email', reg.email) || reg.email;
                             const iarNo = window.prompt('IAR No', reg.iarNo) || reg.iarNo;
                             const department = window.prompt('Department', reg.department) || reg.department;
                             const year = window.prompt('Year', reg.year) || reg.year;
-                            const result = updateRegistrationDetails(reg.id, { name, email, iarNo, department, year });
+                            const result = await updateRegistrationDetails(reg.id, { name, email, iarNo, department, year });
                             if (!result.ok) {
                               showNotice(result.error || 'Unable to update details.');
                               return;
                             }
-                            refreshData();
+                            await refreshData();
                             showNotice('Registration details updated.');
                           }}
                           className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-blue hover:border-g-blue/30 transition-colors"
                         ><Pencil size={11} /></button>
-                        <button onClick={() => { adjustUserPoints(reg.user.id, -50); refreshData(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Minus size={11} /></button>
-                        <button onClick={() => { adjustUserPoints(reg.user.id, 50); refreshData(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-green hover:border-g-green/30 transition-colors"><PlusCircle size={11} /></button>
+                        <button onClick={async () => { await adjustUserPoints(reg.user.id, -50); await refreshData(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Minus size={11} /></button>
+                        <button onClick={async () => { await adjustUserPoints(reg.user.id, 50); await refreshData(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-green hover:border-g-green/30 transition-colors"><PlusCircle size={11} /></button>
                         <button
-                          onClick={() => {
-                            const result = selectedEvent.teamRegistration ? removeMemberFromTeam(reg.id) : { ok: true };
-                            if (!selectedEvent.teamRegistration) removeRegistration(reg.id);
+                          onClick={async () => {
+                            const result = selectedEvent.teamRegistration ? await removeMemberFromTeam(reg.id) : { ok: true };
+                            if (!selectedEvent.teamRegistration) await removeRegistration(reg.id);
                             if (!result.ok) {
                               showNotice(result.error || 'Unable to remove.');
                               return;
                             }
-                            refreshData();
+                            await refreshData();
                           }}
                           className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-yellow hover:border-g-yellow/30 transition-colors"
                         ><X size={11} /></button>
-                        <button onClick={() => { banUserPermanently(reg.user.id); refreshData(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Ban size={11} /></button>
+                        <button onClick={async () => { await banUserPermanently(reg.user.id); await refreshData(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Ban size={11} /></button>
                       </div>
                     </td>
                   </tr>
@@ -408,6 +436,35 @@ export default function AdminEventsPage() {
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Location</label>
                   <input className="form-input" value={eventLocation} onChange={e => setEventLocation(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Join Link (Optional)</label>
+                    <input
+                      className="form-input"
+                      value={eventJoinLink}
+                      onChange={e => setEventJoinLink(e.target.value)}
+                      placeholder="https://meet.google.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Registration Form URL (Optional)</label>
+                    <input
+                      className="form-input"
+                      value={eventRegistrationFormUrl}
+                      onChange={e => setEventRegistrationFormUrl(e.target.value)}
+                      placeholder="https://forms.gle/..."
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Banner Image URL (Optional)</label>
+                  <input
+                    className="form-input"
+                    value={eventBanner}
+                    onChange={e => setEventBanner(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-widest text-white/40 mb-2">Description</label>

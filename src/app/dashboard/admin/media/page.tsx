@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { MediaCategory, MediaItem } from '@/types';
-import { loadMediaItems, resetMediaItems, saveMediaItems } from '@/lib/localStore';
-import { Upload, Trash2, RotateCcw } from 'lucide-react';
+import { loadMedia, createMedia, deleteMedia } from '@/lib/adminData';
+import { Upload, Trash2 } from 'lucide-react';
 
 const CATEGORIES: MediaCategory[] = ['hackathon', 'workshop', 'community', 'highlights', 'team'];
 
@@ -26,14 +26,14 @@ export default function AdminMediaPage() {
   const [fileName, setFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setItems(loadMediaItems());
-  }, []);
-
-  const updateItems = (next: MediaItem[]) => {
-    setItems(next);
-    saveMediaItems(next);
+  const fetchMedia = async () => {
+    const data = await loadMedia();
+    setItems(data);
   };
+
+  useEffect(() => {
+    fetchMedia();
+  }, []);
 
   const handlePickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,31 +48,30 @@ export default function AdminMediaPage() {
     }
   };
 
-  const handleAddMedia = () => {
+  const handleAddMedia = async () => {
     if (!title.trim() || !link.trim() || !uploadData) return;
 
-    const nextItem: MediaItem = {
-      id: `m${Date.now()}`,
+    await createMedia({
       type: 'photo',
       category,
       title: title.trim(),
       src: uploadData,
       thumbnail: uploadData,
       link: link.trim(),
-      date: new Date().toISOString().split('T')[0],
-    };
+    });
 
-    updateItems([nextItem, ...items]);
     setTitle('');
     setCategory('community');
     setLink('');
     setUploadData('');
     setFileName('');
     if (fileInputRef.current) fileInputRef.current.value = '';
+    await fetchMedia();
   };
 
-  const handleReset = () => {
-    updateItems(resetMediaItems());
+  const handleRemove = async (id: string) => {
+    await deleteMedia(id);
+    await fetchMedia();
   };
 
   return (
@@ -82,12 +81,6 @@ export default function AdminMediaPage() {
           <h1 className="font-heading text-2xl font-bold text-white">Media Management</h1>
           <p className="text-white/40 text-sm font-mono mt-1">Upload and manage event photos and videos</p>
         </div>
-        <button
-          onClick={handleReset}
-          className="btn-skew bg-transparent border border-white/20 text-white text-xs font-mono uppercase tracking-widest px-5 py-2.5 hover:border-white/40 transition-all flex items-center gap-2"
-        >
-          <span className="flex items-center gap-2"><RotateCcw size={13} /> Reset</span>
-        </button>
       </div>
 
       {/* Upload form */}
@@ -124,7 +117,7 @@ export default function AdminMediaPage() {
         </div>
         <div className="mt-4 flex gap-3">
           <button
-            onClick={handleAddMedia}
+            onClick={() => void handleAddMedia()}
             className="btn-skew bg-g-green border border-g-green text-white text-xs font-mono uppercase tracking-widest px-5 py-2.5 hover:bg-g-green/80 transition-all flex items-center gap-2"
           >
             <span className="flex items-center gap-2"><Upload size={13} /> Add Media</span>
@@ -147,7 +140,7 @@ export default function AdminMediaPage() {
               <div className="absolute inset-0 bg-dark-bg/0 group-hover:bg-dark-bg/60 transition-colors" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
-                  onClick={() => updateItems(items.filter(m => m.id !== item.id))}
+                  onClick={() => void handleRemove(item.id)}
                   className="w-8 h-8 rounded-lg glass-card flex items-center justify-center text-white/70 hover:text-g-red"
                 ><Trash2 size={14} /></button>
               </div>

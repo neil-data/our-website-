@@ -1,7 +1,9 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
 
 let authInstance: Auth | null = null;
+let dbInstance: Firestore | null = null;
 
 function getFirebaseConfig() {
   return {
@@ -28,4 +30,22 @@ export function getFirebaseAuth() {
   authInstance = getAuth(app);
 
   return authInstance;
+}
+
+export function getFirebaseDb() {
+  if (dbInstance) return dbInstance;
+
+  const config = getFirebaseConfig();
+  const missing = Object.entries(config)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+
+  if (missing.length > 0) {
+    throw new Error(`Firebase is not configured. Missing: ${missing.join(', ')}`);
+  }
+
+  const app = getApps().length > 0 ? getApp() : initializeApp(config);
+  dbInstance = getFirestore(app);
+
+  return dbInstance;
 }

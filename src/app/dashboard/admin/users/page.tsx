@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { AdminRole, TeamMember } from '@/types';
-import { loadTeamMembers, resetTeamMembers, saveTeamMembers } from '@/lib/localStore';
+import { loadTeamMembers, saveTeamMember, deleteTeamMember } from '@/lib/adminData';
 import {
   adjustUserPoints,
   banUserPermanently,
@@ -45,18 +45,37 @@ export default function AdminUsersPage() {
   const [teamForm, setTeamForm] = useState(emptyTeamForm);
   const [userForm, setUserForm] = useState(emptyUserForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
 
-  const refreshUsers = () => setUsers(loadUsers());
+  const refreshUsers = async () => {
+    setUsers(await loadUsers());
+  };
+
+  const showNotice = (text: string) => {
+    setNotice(text);
+    window.setTimeout(() => setNotice(''), 2200);
+  };
+
+  const fetchTeam = async () => {
+    setMembers(await loadTeamMembers());
+  };
 
   useEffect(() => {
-    setMembers(loadTeamMembers());
-    refreshUsers();
+    let mounted = true;
+    const initialize = async () => {
+      if (!mounted) return;
+      await fetchTeam();
+      await refreshUsers();
+    };
+
+    void initialize();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const updateMembers = (next: TeamMember[]) => {
-    setMembers(next);
-    saveTeamMembers(next);
-  };
+  // removed updateMembers
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -70,7 +89,7 @@ export default function AdminUsersPage() {
     m.team.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleTeamSubmit = (e: React.FormEvent) => {
+  const handleTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!teamForm.name.trim() || !teamForm.role.trim() || !teamForm.bio.trim()) return;
 
@@ -89,11 +108,8 @@ export default function AdminUsersPage() {
       },
     };
 
-    if (editingId) {
-      updateMembers(members.map(m => (m.id === editingId ? payload : m)));
-    } else {
-      updateMembers([payload, ...members]);
-    }
+    await saveTeamMember(payload);
+    await fetchTeam();
 
     setTeamForm(emptyTeamForm);
     setEditingId(null);
@@ -113,18 +129,21 @@ export default function AdminUsersPage() {
     });
   };
 
-  const handleResetTeam = () => {
-    updateMembers(resetTeamMembers());
-    setTeamForm(emptyTeamForm);
-    setEditingId(null);
+  const handleRemoveMember = async (id: string) => {
+    await deleteTeamMember(id);
+    await fetchTeam();
   };
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = upsertUserFromSession(userForm);
-    if (!result.user) return;
+    const result = await upsertUserFromSession(userForm);
+    if (!result.user) {
+      showNotice(result.error || 'Unable to add user.');
+      return;
+    }
     setUserForm(emptyUserForm);
-    refreshUsers();
+    await refreshUsers();
+    showNotice('User added successfully.');
   };
 
   return (
@@ -133,6 +152,8 @@ export default function AdminUsersPage() {
         <h1 className="font-heading text-2xl font-bold text-white">Users & Team Management</h1>
         <p className="text-white/40 text-sm font-mono mt-1">Admin can access all user details, points, bans, and team data</p>
       </div>
+
+      {notice && <p className="text-xs font-mono text-g-yellow mb-4">{notice}</p>}
 
       <GlassCard animate={false} className="mb-6" glowColor="green">
         <h2 className="section-number mb-4">Add Student User</h2>
@@ -194,14 +215,14 @@ export default function AdminUsersPage() {
                   </td>
                   <td>
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => { adjustUserPoints(user.id, -50); refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Minus size={11} /></button>
-                      <button onClick={() => { adjustUserPoints(user.id, 50); refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-green hover:border-g-green/30 transition-colors"><PlusCircle size={11} /></button>
+                      <button onClick={async () => { await adjustUserPoints(user.id, -50); await refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Minus size={11} /></button>
+                      <button onClick={async () => { await adjustUserPoints(user.id, 50); await refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-green hover:border-g-green/30 transition-colors"><PlusCircle size={11} /></button>
                       {user.banned ? (
-                        <button onClick={() => { unbanUser(user.id); refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-blue hover:border-g-blue/30 transition-colors"><ShieldCheck size={11} /></button>
+                        <button onClick={async () => { await unbanUser(user.id); await refreshUsers(); showNotice('User unbanned.'); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-blue hover:border-g-blue/30 transition-colors"><ShieldCheck size={11} /></button>
                       ) : (
-                        <button onClick={() => { banUserPermanently(user.id); refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Ban size={11} /></button>
+                        <button onClick={async () => { await banUserPermanently(user.id); await refreshUsers(); showNotice('User banned.'); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Ban size={11} /></button>
                       )}
-                      <button onClick={() => { removeUser(user.id); refreshUsers(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Trash2 size={11} /></button>
+                      <button onClick={async () => { await removeUser(user.id); await refreshUsers(); showNotice('User removed.'); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Trash2 size={11} /></button>
                     </div>
                   </td>
                 </motion.tr>
@@ -213,12 +234,6 @@ export default function AdminUsersPage() {
 
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-heading text-xl font-bold text-white">Team Management</h2>
-        <button
-          onClick={handleResetTeam}
-          className="btn-skew bg-transparent border border-white/20 text-white text-xs font-mono uppercase tracking-widest px-4 py-2 hover:border-white/40 transition-all flex items-center gap-2"
-        >
-          <span className="flex items-center gap-2"><RotateCcw size={12} /> Reset</span>
-        </button>
       </div>
 
       <GlassCard animate={false} className="mb-6" glowColor="blue">
@@ -294,7 +309,7 @@ export default function AdminUsersPage() {
                   <td>
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => handleEdit(member)} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-blue hover:border-g-blue/30 transition-colors"><Pencil size={12} /></button>
-                      <button onClick={() => updateMembers(members.filter(m => m.id !== member.id))} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Trash2 size={12} /></button>
+                      <button onClick={() => void handleRemoveMember(member.id)} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"><Trash2 size={12} /></button>
                     </div>
                   </td>
                 </motion.tr>

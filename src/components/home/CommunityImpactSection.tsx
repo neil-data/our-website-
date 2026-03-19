@@ -3,14 +3,24 @@ import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { motion } from 'framer-motion';
 
-const counters = [
-  { value: 500, suffix: '+', label: 'Community Members', color: 'blue' as const },
-  { value: 40, suffix: '+', label: 'Events Organized', color: 'green' as const },
-  { value: 25, suffix: '+', label: 'Workshops & Bootcamps', color: 'yellow' as const },
-  { value: 5, suffix: 'L+', prefix: '₹', label: 'Prize Money Awarded', color: 'red' as const },
-];
+export default function CommunityImpactSection({
+  membersCount = 100,
+  eventsCount = 2,
+  workshopsCount = 1,
+  prizeMoney = 10,
+}: {
+  membersCount?: number;
+  eventsCount?: number;
+  workshopsCount?: number;
+  prizeMoney?: number;
+}) {
+  const counters = [
+    { value: membersCount, suffix: '+', label: 'Community Members', color: 'blue' as const },
+    { value: eventsCount, suffix: '+', label: 'Events Organized', color: 'green' as const },
+    { value: workshopsCount, suffix: '+', label: 'Workshops & Bootcamps', color: 'yellow' as const },
+    { value: prizeMoney, suffix: 'L+', prefix: '₹', label: 'Prize Money Award', color: 'red' as const },
+  ];
 
-export default function CommunityImpactSection() {
   return (
     <section className="relative py-28 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

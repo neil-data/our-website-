@@ -1,11 +1,12 @@
 import Image from 'next/image';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { mockMedia, mockAnnouncements } from '@/data/media';
+import { loadMedia } from '@/lib/adminData';
 import { Camera } from 'lucide-react';
 
-const galleryItems = mockMedia.slice(0, 6);
+export default async function StudentMediaPage() {
+  const allMedia = await loadMedia();
+  const galleryItems = allMedia.slice(0, 6);
 
-export default function StudentMediaPage() {
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto">
       <div className="mb-8">

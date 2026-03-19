@@ -1,28 +1,45 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { Badge } from '@/components/ui/Badge';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { mockLeaderboard } from '@/data/leaderboard';
+import { loadUsers, StudentUser } from '@/lib/adminData';
 import { getBadgeColor } from '@/lib/utils';
 import { Trophy, Star, Users, Zap, Search } from 'lucide-react';
 
 const podiumOrder = [1, 0, 2]; // Silver, Gold, Bronze visual order for podium
 
 export default function LeaderboardPage() {
+  const [users, setUsers] = useState<StudentUser[]>([]);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('All');
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const fetchedUsers = await loadUsers();
+      if (mounted) {
+        setUsers(fetchedUsers.sort((a, b) => b.points - a.points));
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   // Filter based on tab and search
-  const filteredLeaderboard = mockLeaderboard.filter(e => {
+  const filteredLeaderboard = users.filter(e => {
     const matchesSearch = e.name.toLowerCase().includes(search.toLowerCase());
-    const matchesTab = activeTab === 'All' || e.team === activeTab;
+    const dept = e.department || 'General';
+    const matchesTab = activeTab === 'All' || dept === activeTab;
     return matchesSearch && matchesTab;
   });
 
-  const top3 = filteredLeaderboard.slice(0, 3);
+  const top3 = filteredLeaderboard.slice(0, 3).map((e, index) => ({
+    ...e,
+    rank: index + 1,
+    avatar: `https://api.dicebear.com/7.x/avataaars/png?seed=${e.name.replace(/ /g, '')}`
+  }));
   const rest = filteredLeaderboard.slice(3);
 
   const COLORS = ['#FBBC05', '#9aa0a6', '#EA4335'];
@@ -89,7 +106,7 @@ export default function LeaderboardPage() {
                 const isGold = index === 0;
               return (
                 <motion.div
-                  key={entry.userId}
+                  key={entry.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -160,36 +177,36 @@ export default function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredLeaderboard.map((entry, i) => (
+                {filteredLeaderboard.slice(3).map((entry, i) => (
                   <motion.tr
-                    key={entry.userId}
+                    key={entry.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.03 }}
                   >
                     <td>
-                      <span className="text-white/40 font-mono text-xs">#{entry.rank}</span>
+                      <span className="text-white/40 font-mono text-xs">#{i + 4}</span>
                     </td>
                     <td>
                       <div className="flex items-center gap-3">
                         <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/10 flex-shrink-0">
-                          <Image src={entry.avatar} alt={entry.name} fill className="object-cover" />
+                          <Image src={`https://api.dicebear.com/7.x/avataaars/png?seed=${entry.name.replace(/ /g, '')}`} alt={entry.name} fill className="object-cover" />
                         </div>
                         <div>
                           <div className="text-sm text-white font-medium">{entry.name}</div>
-                          <div className="text-xs text-white/30 font-mono hidden sm:block">{entry.contributions} contributions</div>
+                          <div className="text-xs text-white/30 font-mono hidden sm:block">{(entry.points / 25).toFixed(0)} events</div>
                         </div>
                       </div>
                     </td>
                     <td className="hidden md:table-cell">
-                      <span className="text-white/40 text-xs font-mono">{entry.team}</span>
+                      <span className="text-white/40 text-xs font-mono">{entry.department || 'General'}</span>
                     </td>
                     <td className="hidden sm:table-cell">
-                      <span className="text-white/70 text-sm">{entry.eventsAttended}</span>
+                      <span className="text-white/70 text-sm">{(entry.points / 25).toFixed(0)}</span>
                     </td>
                     <td className="hidden md:table-cell">
-                      <Badge variant={getBadgeColor(entry.badge)} className="capitalize text-[10px]">
-                        {entry.badge.replace('-', ' ')}
+                      <Badge variant={getBadgeColor(entry.points > 300 ? 'influencer' : entry.points > 100 ? 'core-team' : 'contributor')} className="capitalize text-[10px]">
+                        {entry.points > 300 ? 'Influencer' : entry.points > 100 ? 'Core Team' : 'Contributor'}
                       </Badge>
                     </td>
                     <td className="text-right">

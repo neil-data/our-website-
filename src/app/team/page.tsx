@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SectionTitle } from '@/components/ui/SectionTitle';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { loadTeamMembers } from '@/lib/localStore';
+import { loadTeamMembers } from '@/lib/adminData';
 import { AdminRole } from '@/types';
 import { Github, Linkedin, Twitter, Instagram } from 'lucide-react';
 
@@ -32,10 +32,10 @@ const COLOR_MAP: Record<string, string> = {
 
 export default function TeamPage() {
   const [active, setActive] = useState<TeamCategory>('all');
-  const [team, setTeam] = useState(loadTeamMembers());
+  const [team, setTeam] = useState<any[]>([]);
 
   useEffect(() => {
-    setTeam(loadTeamMembers());
+    loadTeamMembers().then(setTeam);
   }, []);
 
   const activeCategory = CATEGORIES.find(c => c.key === active)!;

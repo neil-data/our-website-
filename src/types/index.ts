@@ -31,6 +31,8 @@ export interface Event {
   endDate?: string;
   time: string;
   location: string;
+  joinLink?: string;
+  registrationFormUrl?: string;
   category: 'hackathon' | 'workshop' | 'talk' | 'bootcamp' | 'community' | 'webinar';
   status: 'upcoming' | 'live' | 'completed' | 'registration-open';
   description: string;

@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/Badge';
-import { mockAnnouncements } from '@/data/media';
+import { Announcement } from '@/types';
+import { loadAnnouncements } from '@/lib/adminData';
 import { Trophy, Calendar, Star, Bell } from 'lucide-react';
 
 interface StudentSession {
@@ -21,10 +22,13 @@ interface StudentSession {
 
 export default function StudentOverviewPage() {
   const [session, setSession] = useState<StudentSession | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem('gdgoc-student-session');
     if (raw) setSession(JSON.parse(raw));
+
+    loadAnnouncements().then(setAnnouncements);
   }, []);
 
   const name = session?.name || 'Student';
@@ -106,7 +110,7 @@ export default function StudentOverviewPage() {
               <h2 className="section-number flex items-center gap-2"><Bell size={13} /> Announcements</h2>
             </div>
             <div className="space-y-3">
-              {mockAnnouncements.slice(0, 3).map(ann => (
+              {announcements.slice(0, 3).map(ann => (
                 <div key={ann.id} className="p-3 rounded-lg bg-white/[0.02] border border-white/5">
                   <div className="flex items-start gap-2">
                     {ann.pinned && <div className="w-1.5 h-1.5 rounded-full bg-g-yellow mt-1.5 flex-shrink-0" />}

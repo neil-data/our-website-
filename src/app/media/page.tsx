@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { loadMediaItems } from '@/lib/localStore';
+import { loadMedia } from '@/lib/adminData';
 import { MediaItem } from '@/types';
 import { X, Play, Camera } from 'lucide-react';
 
@@ -14,7 +14,7 @@ export default function MediaPage() {
   const [items, setItems] = useState<MediaItem[]>([]);
 
   useEffect(() => {
-    setItems(loadMediaItems());
+    loadMedia().then(setItems);
   }, []);
 
   const filtered = items.filter(m => category === 'all' || m.category === category);

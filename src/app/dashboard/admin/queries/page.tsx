@@ -12,13 +12,13 @@ export default function AdminQueriesPage() {
   const [replyText, setReplyText] = useState('');
   const [notice, setNotice] = useState('');
 
-  const refresh = () => {
-    const next = loadContactQueries().sort((a, b) => +new Date(b.submittedAt) - +new Date(a.submittedAt));
+  const refresh = async () => {
+    const next = (await loadContactQueries()).sort((a, b) => +new Date(b.submittedAt) - +new Date(a.submittedAt));
     setQueries(next);
   };
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, []);
 
   const filtered = useMemo(() => {
@@ -47,7 +47,7 @@ export default function AdminQueriesPage() {
     setReplyText(selectedQuery.adminReply || '');
   }, [selectedQuery?.id]);
 
-  const handleReply = (e: FormEvent) => {
+  const handleReply = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedQuery) return;
 
@@ -55,14 +55,14 @@ export default function AdminQueriesPage() {
     const adminSession = adminSessionRaw ? JSON.parse(adminSessionRaw) as { name?: string; email?: string } : null;
     const adminName = adminSession?.name || adminSession?.email || 'Admin';
 
-    const result = replyToContactQuery(selectedQuery.id, replyText, adminName);
+    const result = await replyToContactQuery(selectedQuery.id, replyText, adminName);
     if (!result.ok) {
       setNotice(result.error || 'Unable to send reply.');
       return;
     }
 
     setNotice('Reply sent. Student can now view it in dashboard queries.');
-    refresh();
+    await refresh();
   };
 
   return (

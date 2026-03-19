@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { mockAnnouncements } from '@/data/media';
 import { Plus, Pin, Trash2, Bell } from 'lucide-react';
+import { loadAnnouncements, createAnnouncement, deleteAnnouncement } from '@/lib/adminData';
+import { Announcement } from '@/types';
 
 const TYPE_COLORS: Record<string, string> = {
   general: 'text-white/60 border-white/15 bg-white/5',
@@ -12,24 +13,37 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function AdminAnnouncementsPage() {
-  const [announcements, setAnnouncements] = useState(mockAnnouncements);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [compose, setCompose] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newType, setNewType] = useState('general');
 
-  const post = () => {
+  const fetchAnnouncements = async () => {
+    const data = await loadAnnouncements();
+    setAnnouncements(data);
+  };
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const post = async () => {
     if (!newTitle || !newContent) return;
-    setAnnouncements(prev => [{
-      id: `a${Date.now()}`,
+    await createAnnouncement({
       title: newTitle,
       content: newContent,
       type: newType as 'general',
       author: 'Admin',
-      createdAt: new Date().toISOString().split('T')[0],
       pinned: false,
-    }, ...prev]);
+    });
     setNewTitle(''); setNewContent(''); setCompose(false);
+    await fetchAnnouncements();
+  };
+
+  const remove = async (id: string) => {
+    await deleteAnnouncement(id);
+    await fetchAnnouncements();
   };
 
   return (
@@ -101,7 +115,7 @@ export default function AdminAnnouncementsPage() {
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <button
-                onClick={() => setAnnouncements(prev => prev.filter(a => a.id !== ann.id))}
+                onClick={() => remove(ann.id)}
                 className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-white/40 hover:text-g-red hover:border-g-red/30 transition-colors"
               ><Trash2 size={12} /></button>
             </div>

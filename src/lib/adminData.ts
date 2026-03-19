@@ -1,13 +1,25 @@
-import { mockEvents } from '@/data/events';
-import { mockLeaderboard } from '@/data/leaderboard';
 import { Event } from '@/types';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+  writeBatch,
+} from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebaseClient';
 
-const USERS_KEY = 'gdgoc-users';
-const EVENTS_KEY = 'gdgoc-managed-events';
-const REGISTRATIONS_KEY = 'gdgoc-event-registrations';
-const CONTACT_QUERIES_KEY = 'gdgoc-contact-queries';
-
-const canUseStorage = () => typeof window !== 'undefined';
+const USERS_COLLECTION = 'users';
+const EVENTS_COLLECTION = 'events';
+const REGISTRATIONS_COLLECTION = 'registrations';
+const CONTACT_QUERIES_COLLECTION = 'queries';
+const ANNOUNCEMENTS_COLLECTION = 'announcements';
+const MEDIA_COLLECTION = 'media';
+const TEAM_COLLECTION = 'team';
 
 export interface StudentUser {
   id: string;
@@ -91,36 +103,22 @@ interface RegisterOptions {
 }
 
 const makeUserId = (email: string) => `u-${email.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+const makeId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-const safeParse = <T>(value: string | null, fallback: T): T => {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
+const cleanObj = <T extends Record<string, any>>(obj: T): T => {
+  const result = {} as any;
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      result[key] = cleanObj(value);
+    } else {
+      result[key] = value;
+    }
   }
+  return result;
 };
 
-const seedUsers = (): StudentUser[] =>
-  mockLeaderboard.map(entry => {
-    const localPart = entry.name.toLowerCase().replace(/\s+/g, '.');
-    const email = `${localPart}@iar.ac.in`;
-    return {
-      id: makeUserId(email),
-      name: entry.name,
-      email,
-      iarNo: '',
-      department: '',
-      year: '',
-      phone: '',
-      bio: '',
-      github: '',
-      linkedin: '',
-      points: entry.points,
-      banned: false,
-      createdAt: new Date().toISOString(),
-    };
-  });
+const seedUsers = (): StudentUser[] => [];
 
 const normalizeEvent = (event: Event): Event => ({
   ...event,
@@ -130,60 +128,97 @@ const normalizeEvent = (event: Event): Event => ({
   registrationFields: event.registrationFields || [],
 });
 
-export function loadUsers(): StudentUser[] {
-  if (!canUseStorage()) return seedUsers();
-  const users = safeParse<StudentUser[]>(window.localStorage.getItem(USERS_KEY), []);
-  if (users.length > 0) return users;
-  const seeded = seedUsers();
-  window.localStorage.setItem(USERS_KEY, JSON.stringify(seeded));
-  return seeded;
+async function getCollectionDocs<T extends { id: string }>(name: string): Promise<T[]> {
+  const db = getFirebaseDb();
+  const snapshot = await getDocs(collection(db, name));
+  return snapshot.docs.map(snap => ({ id: snap.id, ...(snap.data() as Omit<T, 'id'>) } as T));
 }
 
-export function saveUsers(users: StudentUser[]): void {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
+async function getUsersInternal(): Promise<StudentUser[]> {
+  try {
+    const users = await getCollectionDocs<StudentUser>(USERS_COLLECTION);
+    if (users.length > 0) return users;
+    return [];
+  } catch {
+    return seedUsers();
+  }
 }
 
-export function loadManagedEvents(): Event[] {
-  if (!canUseStorage()) return mockEvents.map(normalizeEvent);
-  const events = safeParse<Event[]>(window.localStorage.getItem(EVENTS_KEY), []);
-  if (events.length > 0) return events.map(normalizeEvent);
-  const seeded = mockEvents.map(normalizeEvent);
-  window.localStorage.setItem(EVENTS_KEY, JSON.stringify(seeded));
-  return seeded;
+async function getRegistrationsInternal(): Promise<EventRegistration[]> {
+  try {
+    return await getCollectionDocs<EventRegistration>(REGISTRATIONS_COLLECTION);
+  } catch {
+    return [];
+  }
 }
 
-export function saveManagedEvents(events: Event[]): void {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(EVENTS_KEY, JSON.stringify(events.map(normalizeEvent)));
+export async function loadUsers(): Promise<StudentUser[]> {
+  return getUsersInternal();
 }
 
-export function loadRegistrations(): EventRegistration[] {
-  if (!canUseStorage()) return [];
-  return safeParse<EventRegistration[]>(window.localStorage.getItem(REGISTRATIONS_KEY), []);
+export async function saveUsers(users: StudentUser[]): Promise<void> {
+  const db = getFirebaseDb();
+  const batch = writeBatch(db);
+  users.forEach(user => {
+    batch.set(doc(db, USERS_COLLECTION, user.id), cleanObj(user));
+  });
+  await batch.commit();
 }
 
-export function saveRegistrations(registrations: EventRegistration[]): void {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(REGISTRATIONS_KEY, JSON.stringify(registrations));
+export async function loadManagedEvents(): Promise<Event[]> {
+  try {
+    const events = await getCollectionDocs<Event>(EVENTS_COLLECTION);
+    return events.map(normalizeEvent);
+  } catch {
+    return [];
+  }
 }
 
-export function loadContactQueries(): ContactQuery[] {
-  if (!canUseStorage()) return [];
-  return safeParse<ContactQuery[]>(window.localStorage.getItem(CONTACT_QUERIES_KEY), []);
+export async function saveManagedEvents(events: Event[]): Promise<void> {
+  const db = getFirebaseDb();
+  const batch = writeBatch(db);
+  events.forEach(event => {
+    batch.set(doc(db, EVENTS_COLLECTION, event.id), cleanObj(normalizeEvent(event)));
+  });
+  await batch.commit();
 }
 
-export function saveContactQueries(queries: ContactQuery[]): void {
-  if (!canUseStorage()) return;
-  window.localStorage.setItem(CONTACT_QUERIES_KEY, JSON.stringify(queries));
+export async function loadRegistrations(): Promise<EventRegistration[]> {
+  return getRegistrationsInternal();
 }
 
-export function submitContactQuery(payload: {
+export async function saveRegistrations(registrations: EventRegistration[]): Promise<void> {
+  const db = getFirebaseDb();
+  const batch = writeBatch(db);
+  registrations.forEach(registration => {
+    batch.set(doc(db, REGISTRATIONS_COLLECTION, registration.id), cleanObj(registration));
+  });
+  await batch.commit();
+}
+
+export async function loadContactQueries(): Promise<ContactQuery[]> {
+  try {
+    return await getCollectionDocs<ContactQuery>(CONTACT_QUERIES_COLLECTION);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveContactQueries(queries: ContactQuery[]): Promise<void> {
+  const db = getFirebaseDb();
+  const batch = writeBatch(db);
+  queries.forEach(queryItem => {
+    batch.set(doc(db, CONTACT_QUERIES_COLLECTION, queryItem.id), cleanObj(queryItem));
+  });
+  await batch.commit();
+}
+
+export async function submitContactQuery(payload: {
   name: string;
   email: string;
   subject: string;
   message: string;
-}): { ok: boolean; error?: string } {
+}): Promise<{ ok: boolean; error?: string }> {
   const name = payload.name.trim();
   const email = payload.email.trim().toLowerCase();
   const subject = payload.subject.trim();
@@ -197,9 +232,8 @@ export function submitContactQuery(payload: {
     return { ok: false, error: 'Please use your @iar.ac.in email.' };
   }
 
-  const queries = loadContactQueries();
   const next: ContactQuery = {
-    id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: makeId('q'),
     name,
     email,
     subject,
@@ -208,57 +242,60 @@ export function submitContactQuery(payload: {
     status: 'open',
   };
 
-  saveContactQueries([next, ...queries]);
-
-  upsertUserFromSession({ name, email });
-  return { ok: true };
+  try {
+    const db = getFirebaseDb();
+    await setDoc(doc(db, CONTACT_QUERIES_COLLECTION, next.id), cleanObj(next));
+    await upsertUserFromSession({ name, email });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Unable to submit query right now.' };
+  }
 }
 
-export function replyToContactQuery(queryId: string, reply: string, adminName: string = 'Admin'): { ok: boolean; error?: string } {
+export async function replyToContactQuery(queryId: string, reply: string, adminName: string = 'Admin'): Promise<{ ok: boolean; error?: string }> {
   const cleanReply = reply.trim();
   if (!cleanReply) return { ok: false, error: 'Reply message cannot be empty.' };
 
-  const queries = loadContactQueries();
-  const target = queries.find(query => query.id === queryId);
-  if (!target) return { ok: false, error: 'Query not found.' };
+  try {
+    const db = getFirebaseDb();
+    const targetRef = doc(db, CONTACT_QUERIES_COLLECTION, queryId);
+    const targetSnap = await getDoc(targetRef);
+    if (!targetSnap.exists()) return { ok: false, error: 'Query not found.' };
 
-  const next = queries.map(query =>
-    query.id === queryId
-      ? {
-          ...query,
-          adminReply: cleanReply,
-          repliedBy: adminName,
-          repliedAt: new Date().toISOString(),
-          status: 'replied' as const,
-        }
-      : query
-  );
+    await updateDoc(targetRef, cleanObj({
+      adminReply: cleanReply,
+      repliedBy: adminName,
+      repliedAt: new Date().toISOString(),
+      status: 'replied',
+    }));
 
-  saveContactQueries(next);
-  return { ok: true };
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Unable to save reply right now.' };
+  }
 }
 
-export function getQueriesForStudent(email: string): ContactQuery[] {
+export async function getQueriesForStudent(email: string): Promise<ContactQuery[]> {
   const target = email.trim().toLowerCase();
-  return loadContactQueries().filter(query => query.email.toLowerCase() === target);
+  const all = await loadContactQueries();
+  return all.filter(queryItem => queryItem.email.toLowerCase() === target);
 }
 
-export function getEventsWithRegistrationCounts(): Event[] {
-  const events = loadManagedEvents();
-  const registrations = loadRegistrations();
+export async function getEventsWithRegistrationCounts(): Promise<Event[]> {
+  const [events, registrations] = await Promise.all([loadManagedEvents(), loadRegistrations()]);
   return events.map(event => ({
     ...event,
     registered: registrations.filter(r => r.eventId === event.id).length,
   }));
 }
 
-export function upsertUserFromSession(session: SessionPayload): { user: StudentUser | null; error?: string } {
+export async function upsertUserFromSession(session: SessionPayload): Promise<{ user: StudentUser | null; error?: string }> {
   const cleanEmail = (session.email || '').trim().toLowerCase();
   if (!cleanEmail) return { user: null, error: 'Email is required.' };
   if (!cleanEmail.endsWith('@iar.ac.in')) return { user: null, error: 'Only @iar.ac.in emails are allowed.' };
 
-  const users = loadUsers();
-  const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+  const users = await loadUsers();
+  const existing = users.find(user => user.email.toLowerCase() === cleanEmail);
   if (existing?.banned) {
     return { user: null, error: 'This account has been permanently banned by admin.' };
   }
@@ -279,23 +316,23 @@ export function upsertUserFromSession(session: SessionPayload): { user: StudentU
     createdAt: existing?.createdAt || new Date().toISOString(),
   };
 
-  const nextUsers = existing
-    ? users.map(u => (u.id === existing.id ? nextUser : u))
-    : [nextUser, ...users];
-  saveUsers(nextUsers);
-
-  return { user: nextUser };
+  try {
+    const db = getFirebaseDb();
+    await setDoc(doc(db, USERS_COLLECTION, nextUser.id), cleanObj(nextUser), { merge: true });
+    return { user: nextUser };
+  } catch {
+    return { user: null, error: 'Unable to save user profile.' };
+  }
 }
 
-const eventById = (eventId: string) => getEventsWithRegistrationCounts().find(e => e.id === eventId);
-
-const registrationExists = (eventId: string, email: string) => {
+const registrationExists = (registrations: EventRegistration[], eventId: string, email: string) => {
   const target = email.trim().toLowerCase();
-  return loadRegistrations().some(r => r.eventId === eventId && r.email.toLowerCase() === target);
+  return registrations.some(registration => registration.eventId === eventId && registration.email.toLowerCase() === target);
 };
 
-export function registerForEventWithDetails(eventId: string, leaderSession: SessionPayload, options?: RegisterOptions): { ok: boolean; error?: string } {
-  const event = eventById(eventId);
+export async function registerForEventWithDetails(eventId: string, leaderSession: SessionPayload, options?: RegisterOptions): Promise<{ ok: boolean; error?: string }> {
+  const events = await getEventsWithRegistrationCounts();
+  const event = events.find(item => item.id === eventId);
   if (!event) return { ok: false, error: 'Event not found.' };
   if (event.status === 'completed') return { ok: false, error: 'Event registration is closed.' };
 
@@ -314,20 +351,23 @@ export function registerForEventWithDetails(eventId: string, leaderSession: Sess
     });
   }
 
-  const emails = candidates.map(c => (c.session.email || '').trim().toLowerCase());
+  const emails = candidates.map(candidate => (candidate.session.email || '').trim().toLowerCase());
   if (emails.some(email => !email.endsWith('@iar.ac.in'))) {
     return { ok: false, error: 'All team member emails must be @iar.ac.in.' };
   }
+
   if (new Set(emails).size !== emails.length) {
     return { ok: false, error: 'Duplicate emails are not allowed in one registration.' };
   }
-  if (emails.some(email => registrationExists(eventId, email))) {
+
+  const users = await loadUsers();
+  const banned = users.find(user => emails.includes(user.email.toLowerCase()) && user.banned);
+  if (banned) return { ok: false, error: `${banned.email} is banned by admin.` };
+
+  const allRegistrations = await loadRegistrations();
+  if (emails.some(email => registrationExists(allRegistrations, eventId, email))) {
     return { ok: false, error: 'One or more members are already registered in this event.' };
   }
-
-  const users = loadUsers();
-  const banned = users.find(u => emails.includes(u.email.toLowerCase()) && u.banned);
-  if (banned) return { ok: false, error: `${banned.email} is banned by admin.` };
 
   if (event.teamRegistration) {
     const min = event.teamMinSize || 2;
@@ -348,63 +388,82 @@ export function registerForEventWithDetails(eventId: string, leaderSession: Sess
     return { ok: false, error: `${missingField.label} is required.` };
   }
 
-  const currentRegistrations = loadRegistrations();
-  if (currentRegistrations.filter(r => r.eventId === eventId).length + candidates.length > event.capacity) {
+  const existingEventRegistrations = allRegistrations.filter(registration => registration.eventId === eventId).length;
+  if (existingEventRegistrations + candidates.length > event.capacity) {
     return { ok: false, error: 'Not enough spots left for all team members.' };
   }
 
-  const teamId = event.teamRegistration ? `team-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : undefined;
+  const teamId = event.teamRegistration ? makeId('team') : undefined;
   const teamName = options?.teamName?.trim();
 
-  const nextRegistrations: EventRegistration[] = [];
-  for (const candidate of candidates) {
-    const synced = upsertUserFromSession(candidate.session);
-    if (!synced.user) return { ok: false, error: synced.error || 'Unable to save member profile.' };
-    nextRegistrations.push({
-      id: `reg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      eventId,
-      userId: synced.user.id,
-      name: synced.user.name,
-      email: synced.user.email,
-      iarNo: synced.user.iarNo,
-      department: synced.user.department,
-      year: synced.user.year,
-      teamId,
-      teamName,
-      isLeader: candidate.leader,
-      customFieldValues: customValues,
-      registeredAt: new Date().toISOString(),
-    });
-  }
+  try {
+    const db = getFirebaseDb();
+    const batch = writeBatch(db);
+    const userPointDeltas = new Map<string, number>();
 
-  saveRegistrations([...nextRegistrations, ...currentRegistrations]);
-  nextRegistrations.forEach(reg => adjustUserPoints(reg.userId, 25));
-  return { ok: true };
+    for (const candidate of candidates) {
+      const synced = await upsertUserFromSession(candidate.session);
+      if (!synced.user) return { ok: false, error: synced.error || 'Unable to save member profile.' };
+
+      const registration: EventRegistration = {
+        id: makeId('reg'),
+        eventId,
+        userId: synced.user.id,
+        name: synced.user.name,
+        email: synced.user.email,
+        iarNo: synced.user.iarNo,
+        department: synced.user.department,
+        year: synced.user.year,
+        teamId,
+        teamName,
+        isLeader: candidate.leader,
+        customFieldValues: customValues,
+        registeredAt: new Date().toISOString(),
+      };
+
+      batch.set(doc(db, REGISTRATIONS_COLLECTION, registration.id), cleanObj(registration));
+      userPointDeltas.set(synced.user.id, (userPointDeltas.get(synced.user.id) || 0) + 25);
+    }
+
+    await batch.commit();
+
+    for (const [userId, delta] of userPointDeltas.entries()) {
+      await adjustUserPoints(userId, delta);
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, error: 'Unable to register right now.' };
+  }
 }
 
-export function registerUserForEvent(eventId: string, session: SessionPayload): { ok: boolean; error?: string } {
+export async function registerUserForEvent(eventId: string, session: SessionPayload): Promise<{ ok: boolean; error?: string }> {
   return registerForEventWithDetails(eventId, session);
 }
 
-export function getRegistrationsForEvent(eventId: string): EventRegistrationWithUser[] {
-  const users = loadUsers();
-  const registrations = loadRegistrations().filter(r => r.eventId === eventId);
+export async function getRegistrationsForEvent(eventId: string): Promise<EventRegistrationWithUser[]> {
+  const db = getFirebaseDb();
+  const eventRegistrationsSnapshot = await getDocs(query(collection(db, REGISTRATIONS_COLLECTION), where('eventId', '==', eventId)));
+  const registrations = eventRegistrationsSnapshot.docs.map(item => ({ id: item.id, ...(item.data() as Omit<EventRegistration, 'id'>) }));
+
+  const users = await loadUsers();
+
   return registrations
-    .map(reg => {
-      const user = users.find(u => u.id === reg.userId);
-      return user ? { ...reg, user } : null;
+    .map(registration => {
+      const user = users.find(item => item.id === registration.userId);
+      return user ? { ...registration, user } : null;
     })
     .filter((item): item is EventRegistrationWithUser => Boolean(item));
 }
 
-export function getTeamsForEvent(eventId: string): EventTeam[] {
-  const registrations = getRegistrationsForEvent(eventId);
+export async function getTeamsForEvent(eventId: string): Promise<EventTeam[]> {
+  const registrations = await getRegistrationsForEvent(eventId);
   const grouped = new Map<string, EventRegistrationWithUser[]>();
 
-  for (const reg of registrations) {
-    const key = reg.teamId || `solo-${reg.id}`;
+  for (const registration of registrations) {
+    const key = registration.teamId || `solo-${registration.id}`;
     const list = grouped.get(key) || [];
-    list.push(reg);
+    list.push(registration);
     grouped.set(key, list);
   }
 
@@ -415,53 +474,54 @@ export function getTeamsForEvent(eventId: string): EventTeam[] {
   }));
 }
 
-export function updateRegistrationDetails(registrationId: string, patch: Partial<EventRegistration>): { ok: boolean; error?: string } {
-  const registrations = loadRegistrations();
-  const target = registrations.find(r => r.id === registrationId);
-  if (!target) return { ok: false, error: 'Registration not found.' };
+export async function updateRegistrationDetails(registrationId: string, patch: Partial<EventRegistration>): Promise<{ ok: boolean; error?: string }> {
+  const db = getFirebaseDb();
+  const regRef = doc(db, REGISTRATIONS_COLLECTION, registrationId);
+  const target = await getDoc(regRef);
+  if (!target.exists()) return { ok: false, error: 'Registration not found.' };
 
-  const nextEmail = (patch.email ?? target.email).trim().toLowerCase();
+  const existing = { id: target.id, ...(target.data() as Omit<EventRegistration, 'id'>) };
+
+  const nextEmail = (patch.email ?? existing.email).trim().toLowerCase();
   if (!nextEmail.endsWith('@iar.ac.in')) return { ok: false, error: 'Email must be @iar.ac.in.' };
 
-  const duplicate = registrations.find(r => r.id !== target.id && r.eventId === target.eventId && r.email.toLowerCase() === nextEmail);
+  const allEventRegistrations = await getRegistrationsForEvent(existing.eventId);
+  const duplicate = allEventRegistrations.find(registration => registration.id !== existing.id && registration.email.toLowerCase() === nextEmail);
   if (duplicate) return { ok: false, error: 'Another member already uses this email in this event.' };
 
-  const synced = upsertUserFromSession({
-    name: patch.name ?? target.name,
+  const synced = await upsertUserFromSession({
+    name: patch.name ?? existing.name,
     email: nextEmail,
-    iarNo: patch.iarNo ?? target.iarNo,
-    department: patch.department ?? target.department,
-    year: patch.year ?? target.year,
+    iarNo: patch.iarNo ?? existing.iarNo,
+    department: patch.department ?? existing.department,
+    year: patch.year ?? existing.year,
   });
   if (!synced.user) return { ok: false, error: synced.error || 'Unable to update user.' };
-  const syncedUser = synced.user;
 
-  const next = registrations.map(reg =>
-    reg.id === registrationId
-      ? {
-          ...reg,
-          ...patch,
-          userId: syncedUser.id,
-          email: syncedUser.email,
-          name: patch.name ?? syncedUser.name,
-          iarNo: patch.iarNo ?? syncedUser.iarNo,
-          department: patch.department ?? syncedUser.department,
-          year: patch.year ?? syncedUser.year,
-        }
-      : reg
-  );
-  saveRegistrations(next);
+  await updateDoc(regRef, cleanObj({
+    ...patch,
+    userId: synced.user.id,
+    email: synced.user.email,
+    name: patch.name ?? synced.user.name,
+    iarNo: patch.iarNo ?? synced.user.iarNo,
+    department: patch.department ?? synced.user.department,
+    year: patch.year ?? synced.user.year,
+  }));
+
   return { ok: true };
 }
 
-export function addMemberToTeam(eventId: string, teamId: string, member: TeamMemberInput): { ok: boolean; error?: string } {
-  const event = eventById(eventId);
+export async function addMemberToTeam(eventId: string, teamId: string, member: TeamMemberInput): Promise<{ ok: boolean; error?: string }> {
+  const events = await getEventsWithRegistrationCounts();
+  const event = events.find(item => item.id === eventId);
   if (!event) return { ok: false, error: 'Event not found.' };
-  const teamRegs = loadRegistrations().filter(r => r.eventId === eventId && r.teamId === teamId);
-  if (teamRegs.length === 0) return { ok: false, error: 'Team not found.' };
+
+  const registrations = await loadRegistrations();
+  const teamRegistrations = registrations.filter(registration => registration.eventId === eventId && registration.teamId === teamId);
+  if (teamRegistrations.length === 0) return { ok: false, error: 'Team not found.' };
 
   const maxSize = event.teamMaxSize || 4;
-  if (teamRegs.length >= maxSize) return { ok: false, error: `Team already reached max size (${maxSize}).` };
+  if (teamRegistrations.length >= maxSize) return { ok: false, error: `Team already reached max size (${maxSize}).` };
 
   return registerForEventWithDetails(
     eventId,
@@ -473,81 +533,94 @@ export function addMemberToTeam(eventId: string, teamId: string, member: TeamMem
       year: member.year,
     },
     {
-      teamName: teamRegs[0].teamName,
+      teamName: teamRegistrations[0].teamName,
       members: [],
-      customFieldValues: teamRegs[0].customFieldValues,
+      customFieldValues: teamRegistrations[0].customFieldValues,
     }
   );
 }
 
-export function removeMemberFromTeam(registrationId: string): { ok: boolean; error?: string } {
-  const registrations = loadRegistrations();
-  const target = registrations.find(r => r.id === registrationId);
-  if (!target) return { ok: false, error: 'Registration not found.' };
+export async function removeMemberFromTeam(registrationId: string): Promise<{ ok: boolean; error?: string }> {
+  const db = getFirebaseDb();
+  const registrationRef = doc(db, REGISTRATIONS_COLLECTION, registrationId);
+  const targetSnap = await getDoc(registrationRef);
+  if (!targetSnap.exists()) return { ok: false, error: 'Registration not found.' };
+
+  const target = { id: targetSnap.id, ...(targetSnap.data() as Omit<EventRegistration, 'id'>) };
+
   if (!target.teamId) {
-    removeRegistration(registrationId);
+    await removeRegistration(registrationId);
     return { ok: true };
   }
-  const teamMembers = registrations.filter(r => r.eventId === target.eventId && r.teamId === target.teamId);
+
+  const registrations = await loadRegistrations();
+  const teamMembers = registrations.filter(registration => registration.eventId === target.eventId && registration.teamId === target.teamId);
   if (target.isLeader && teamMembers.length > 1) {
     return { ok: false, error: 'Leader cannot be removed while team still has members.' };
   }
-  removeRegistration(registrationId);
+
+  await removeRegistration(registrationId);
   return { ok: true };
 }
 
-export function removeRegistration(registrationId: string): void {
-  const registrations = loadRegistrations();
-  const existing = registrations.find(r => r.id === registrationId);
-  const next = registrations.filter(r => r.id !== registrationId);
-  saveRegistrations(next);
-  if (existing) adjustUserPoints(existing.userId, -25);
+export async function removeRegistration(registrationId: string): Promise<void> {
+  const db = getFirebaseDb();
+  const regRef = doc(db, REGISTRATIONS_COLLECTION, registrationId);
+  const existing = await getDoc(regRef);
+  if (!existing.exists()) return;
+
+  const reg = { id: existing.id, ...(existing.data() as Omit<EventRegistration, 'id'>) };
+  await deleteDoc(regRef);
+  await adjustUserPoints(reg.userId, -25);
 }
 
-export function addUserToEvent(eventId: string, userId: string): { ok: boolean; error?: string } {
-  const users = loadUsers();
-  const user = users.find(u => u.id === userId);
+export async function addUserToEvent(eventId: string, userId: string): Promise<{ ok: boolean; error?: string }> {
+  const users = await loadUsers();
+  const user = users.find(item => item.id === userId);
   if (!user) return { ok: false, error: 'User not found.' };
   return registerForEventWithDetails(eventId, user);
 }
 
-export function adjustUserPoints(userId: string, delta: number): void {
-  const users = loadUsers();
-  const next = users.map(user =>
-    user.id === userId
-      ? { ...user, points: Math.max(0, user.points + delta) }
-      : user
-  );
-  saveUsers(next);
+export async function adjustUserPoints(userId: string, delta: number): Promise<void> {
+  const db = getFirebaseDb();
+  const ref = doc(db, USERS_COLLECTION, userId);
+  const snapshot = await getDoc(ref);
+  if (!snapshot.exists()) return;
+
+  const user = snapshot.data() as StudentUser;
+  await updateDoc(ref, {
+    points: Math.max(0, (user.points || 0) + delta),
+  });
 }
 
-export function banUserPermanently(userId: string): void {
-  const users = loadUsers();
-  const next = users.map(user =>
-    user.id === userId
-      ? { ...user, banned: true }
-      : user
-  );
-  saveUsers(next);
+export async function banUserPermanently(userId: string): Promise<void> {
+  const db = getFirebaseDb();
+  await updateDoc(doc(db, USERS_COLLECTION, userId), {
+    banned: true,
+  });
 
-  const registrations = loadRegistrations();
-  saveRegistrations(registrations.filter(r => r.userId !== userId));
+  const registrations = await loadRegistrations();
+  const related = registrations.filter(registration => registration.userId === userId);
+  await Promise.all(related.map(registration => removeRegistration(registration.id)));
 }
 
-export function unbanUser(userId: string): void {
-  const users = loadUsers();
-  saveUsers(users.map(user => (user.id === userId ? { ...user, banned: false } : user)));
+export async function unbanUser(userId: string): Promise<void> {
+  const db = getFirebaseDb();
+  await updateDoc(doc(db, USERS_COLLECTION, userId), {
+    banned: false,
+  });
 }
 
-export function removeUser(userId: string): void {
-  const users = loadUsers();
-  saveUsers(users.filter(user => user.id !== userId));
-  const registrations = loadRegistrations();
-  saveRegistrations(registrations.filter(r => r.userId !== userId));
+export async function removeUser(userId: string): Promise<void> {
+  const db = getFirebaseDb();
+  await deleteDoc(doc(db, USERS_COLLECTION, userId));
+
+  const registrations = await loadRegistrations();
+  const related = registrations.filter(registration => registration.userId === userId);
+  await Promise.all(related.map(registration => deleteDoc(doc(db, REGISTRATIONS_COLLECTION, registration.id))));
 }
 
-export function createManagedEvent(payload: Partial<Event>): Event {
-  const events = loadManagedEvents();
+export async function createManagedEvent(payload: Partial<Event>): Promise<Event> {
   const next: Event = normalizeEvent({
     id: `e${Date.now()}`,
     title: payload.title || 'New Event',
@@ -555,6 +628,8 @@ export function createManagedEvent(payload: Partial<Event>): Event {
     endDate: payload.endDate,
     time: payload.time || '10:00 AM IST',
     location: payload.location || 'TBD',
+    joinLink: payload.joinLink,
+    registrationFormUrl: payload.registrationFormUrl,
     category: payload.category || 'community',
     status: payload.status || 'upcoming',
     description: payload.description || '',
@@ -571,13 +646,98 @@ export function createManagedEvent(payload: Partial<Event>): Event {
     registrationFields: payload.registrationFields || [],
     tags: payload.tags || ['community'],
   });
-  saveManagedEvents([next, ...events]);
+
+  const db = getFirebaseDb();
+  await setDoc(doc(db, EVENTS_COLLECTION, next.id), cleanObj(next));
   return next;
 }
 
-export function deleteManagedEvent(eventId: string): void {
-  const events = loadManagedEvents();
-  saveManagedEvents(events.filter(event => event.id !== eventId));
-  const registrations = loadRegistrations();
-  saveRegistrations(registrations.filter(reg => reg.eventId !== eventId));
+export async function deleteManagedEvent(eventId: string): Promise<void> {
+  const db = getFirebaseDb();
+  await deleteDoc(doc(db, EVENTS_COLLECTION, eventId));
+
+  const registrations = await loadRegistrations();
+  const related = registrations.filter(registration => registration.eventId === eventId);
+  await Promise.all(related.map(registration => deleteDoc(doc(db, REGISTRATIONS_COLLECTION, registration.id))));
+}
+
+import { Announcement, MediaItem, TeamMember } from '@/types';
+
+export async function loadAnnouncements(): Promise<Announcement[]> {
+  try {
+    const items = await getCollectionDocs<Announcement>(ANNOUNCEMENTS_COLLECTION);
+    return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch {
+    return [];
+  }
+}
+
+export async function createAnnouncement(payload: Partial<Announcement>): Promise<Announcement> {
+  const next: Announcement = {
+    id: `a${Date.now()}`,
+    title: payload.title || 'Announcement',
+    content: payload.content || '',
+    type: payload.type || 'general',
+    author: payload.author || 'Admin',
+    createdAt: payload.createdAt || new Date().toISOString(),
+    pinned: Boolean(payload.pinned),
+  };
+  const db = getFirebaseDb();
+  await setDoc(doc(db, ANNOUNCEMENTS_COLLECTION, next.id), cleanObj(next));
+  return next;
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  const db = getFirebaseDb();
+  await deleteDoc(doc(db, ANNOUNCEMENTS_COLLECTION, id));
+}
+
+export async function loadMedia(): Promise<MediaItem[]> {
+  try {
+    const items = await getCollectionDocs<MediaItem>(MEDIA_COLLECTION);
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  } catch {
+    return [];
+  }
+}
+
+export async function createMedia(payload: Partial<MediaItem>): Promise<MediaItem> {
+  const next: MediaItem = {
+    id: `m${Date.now()}`,
+    type: payload.type || 'photo',
+    category: payload.category || 'community',
+    title: payload.title || 'Media',
+    src: payload.src || '',
+    thumbnail: payload.thumbnail || payload.src || '',
+    link: payload.link,
+    event: payload.event,
+    date: payload.date || new Date().toISOString().split('T')[0],
+  };
+  const db = getFirebaseDb();
+  await setDoc(doc(db, MEDIA_COLLECTION, next.id), cleanObj(next));
+  return next;
+}
+
+export async function deleteMedia(id: string): Promise<void> {
+  const db = getFirebaseDb();
+  await deleteDoc(doc(db, MEDIA_COLLECTION, id));
+}
+
+export async function loadTeamMembers(): Promise<TeamMember[]> {
+  try {
+    return await getCollectionDocs<TeamMember>(TEAM_COLLECTION);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveTeamMember(payload: TeamMember): Promise<TeamMember> {
+  const db = getFirebaseDb();
+  await setDoc(doc(db, TEAM_COLLECTION, payload.id), cleanObj(payload));
+  return payload;
+}
+
+export async function deleteTeamMember(id: string): Promise<void> {
+  const db = getFirebaseDb();
+  await deleteDoc(doc(db, TEAM_COLLECTION, id));
 }

@@ -37,7 +37,7 @@ export default function LoginPage() {
     }
   }, []);
 
-  const signInStudent = (signInEmail: string, profileName?: string) => {
+  const signInStudent = async (signInEmail: string, profileName?: string) => {
     const cleanEmail = normalizeEmail(signInEmail);
     const displayName = profileName?.trim() || name.trim() || cleanEmail.split('@')[0];
     const sessionPayload = {
@@ -47,7 +47,7 @@ export default function LoginPage() {
       department: department.trim(),
       year,
     };
-    const synced = upsertUserFromSession(sessionPayload);
+    const synced = await upsertUserFromSession(sessionPayload);
     if (!synced.user) {
       setError(synced.error || 'Unable to sign in.');
       return;
@@ -56,7 +56,7 @@ export default function LoginPage() {
     router.push('/dashboard/student/overview');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isIarEmail(email)) {
       setError('Please use your @iar.ac.in email.');
@@ -67,7 +67,7 @@ export default function LoginPage() {
       return;
     }
     setError('');
-    signInStudent(email, name);
+    await signInStudent(email, name);
   };
 
   const handleGoogleSignIn = async () => {
@@ -97,7 +97,7 @@ export default function LoginPage() {
       }
 
       setEmail(googleEmail);
-      signInStudent(googleEmail, googleName);
+      await signInStudent(googleEmail, googleName);
     } catch {
       setError('Google sign-in failed. Please try again.');
     } finally {

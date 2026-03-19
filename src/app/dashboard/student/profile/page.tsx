@@ -49,7 +49,7 @@ export default function StudentProfilePage() {
     }
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const updated: StudentSession = {
       name: formName,
@@ -63,7 +63,7 @@ export default function StudentProfilePage() {
       linkedin: formLinkedin,
     };
     localStorage.setItem('gdgoc-student-session', JSON.stringify(updated));
-    upsertUserFromSession(updated);
+    await upsertUserFromSession(updated);
     setSession(updated);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
