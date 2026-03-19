@@ -25,6 +25,20 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebaseClient';
 
+export type {
+  Achievement,
+  Announcement,
+  ContactQuery,
+  Event,
+  EventRegistration,
+  EventRegistrationWithUser,
+  EventTeam,
+  MediaItem,
+  StudentUser,
+  TeamMember,
+  SocialLinks,
+} from '@/types';
+
 const USERS_COLLECTION = 'users';
 const EVENTS_COLLECTION = 'events';
 const REGISTRATIONS_COLLECTION = 'registrations';
@@ -303,7 +317,7 @@ export async function upsertUserFromSession(session: SessionPayload): Promise<{ 
 
 const registrationExists = (registrations: EventRegistration[], eventId: string, email: string) => {
   const target = email.trim().toLowerCase();
-  return registrations.some(registration => registration.eventId === eventId && registration.email.toLowerCase() === target);
+  return registrations.some(registration => registration.eventId === eventId && (registration.email || '').toLowerCase() === target);
 };
 
 export async function registerForEventWithDetails(eventId: string, leaderSession: SessionPayload, options?: RegisterOptions): Promise<{ ok: boolean; error?: string }> {
@@ -340,8 +354,14 @@ export async function registerForEventWithDetails(eventId: string, leaderSession
   const banned = users.find(user => emails.includes(user.email.toLowerCase()) && user.banned);
   if (banned) return { ok: false, error: `${banned.email} is banned by admin.` };
 
-  const allRegistrations = await loadRegistrations();
-  if (emails.some(email => registrationExists(allRegistrations, eventId, email))) {
+  const db = getFirebaseDb();
+  const eventRegistrationsSnapshot = await getDocs(query(collection(db, REGISTRATIONS_COLLECTION), where('eventId', '==', eventId)));
+  const eventRegistrations = eventRegistrationsSnapshot.docs.map(item => ({
+    id: item.id,
+    ...(item.data() as Omit<EventRegistration, 'id'>),
+  }));
+
+  if (emails.some(email => registrationExists(eventRegistrations, eventId, email))) {
     return { ok: false, error: 'One or more members are already registered in this event.' };
   }
 
@@ -364,7 +384,7 @@ export async function registerForEventWithDetails(eventId: string, leaderSession
     return { ok: false, error: `${missingField.label} is required.` };
   }
 
-  const existingEventRegistrations = allRegistrations.filter(registration => registration.eventId === eventId).length;
+  const existingEventRegistrations = eventRegistrations.length;
   if (existingEventRegistrations + candidates.length > event.capacity) {
     return { ok: false, error: 'Not enough spots left for all team members.' };
   }
@@ -373,7 +393,6 @@ export async function registerForEventWithDetails(eventId: string, leaderSession
   const teamName = options?.teamName?.trim();
 
   try {
-    const db = getFirebaseDb();
     const batch = writeBatch(db);
     const userPointDeltas = new Map<string, number>();
 

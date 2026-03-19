@@ -11,19 +11,16 @@ import {
   banUserPermanently,
   createManagedEvent,
   deleteManagedEvent,
-  EventTeam,
-  EventRegistrationWithUser,
   getEventsWithRegistrationCounts,
   getRegistrationsForEvent,
   getTeamsForEvent,
   loadUsers,
   removeMemberFromTeam,
   removeRegistration,
-  StudentUser,
   updateRegistrationDetails,
 } from '@/lib/adminData';
 import { getCategoryColor, getStatusColor, formatDateShort } from '@/lib/utils';
-import { Event, EventRegistrationField } from '@/types';
+import { Event, EventRegistrationField, EventRegistrationWithUser, EventTeam, StudentUser } from '@/types';
 import { Plus, Trash2, Eye, X, Ban, Download, UserPlus, Minus, PlusCircle, Pencil } from 'lucide-react';
 
 export default function AdminEventsPage() {
